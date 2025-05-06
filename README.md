@@ -106,13 +106,13 @@ Optional but recommended:
    ```
 2. Edit `app/db_config.py` and fill in your:
    ```python
-   DB_CONFIG = {
-     "host":     "localhost",
-     "user":     "cs5330",
-     "password": "your_password",
-     "database": "social_media",
-     "port":     3306
-   }
+   # app/db_config.py
+   DB_HOST     = "localhost"
+   DB_USER     = "cs5330"
+   DB_PASS     = "your_password"
+   DB_NAME     = "social_media"
+   DB_PORT     = 3306
+
    ```
 
 ---
