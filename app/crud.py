@@ -307,3 +307,14 @@ def get_institutes():
 def get_projects():
     """Return all rows from Project."""
     return run_query("SELECT * FROM Project", fetch=True)
+
+def get_fields(project_name=""):
+    """
+    Return all fields; if project_name is given, only fields for that project.
+    """
+    sql = "SELECT * FROM Field"
+    params = []
+    if project_name:
+        sql += " WHERE ProjectName=%s"
+        params.append(project_name)
+    return run_query(sql, params, fetch=True)
