@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Posts</title></head>
+  <body>
+    <h1>Posts</h1>
+    <form method="post">
+      <label>Media:</label>
+      <input name="media" value="{{ media }}" required>
+      <label>Username:</label>
+      <input name="username" value="{{ username }}" required>
+      <label>Time (YYYY-MM-DD HH:MM:SS):</label>
+      <input name="time" placeholder="2025-05-06 14:30:00" required>
+      <label>Text:</label>
+      <input name="text" required>
+      <button type="submit">Add Post</button>
+    </form>
+
+    <h2>Existing Posts</h2>
+    <ul>
+      {% for p in posts %}
+        <li>
+          [{{ p.TimePosted }}] {{ p.MediaName }}/{{ p.Username }}:
+          {{ p.TextContent }}
+        </li>
+      {% else %}
+        <li><em>-- no posts yet --</em></li>
+      {% endfor %}
+    </ul>
+
+    <p><a href="/users">← back to Users</a></p>
+  </body>
+</html>
