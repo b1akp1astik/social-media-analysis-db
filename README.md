@@ -76,7 +76,7 @@ Optional but recommended:
 
 1. **Clone** the repo:
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/b1akp1astik/social-media-analysis-db.git
    cd social-media-analysis-db
    ```
 
