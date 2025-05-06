@@ -102,6 +102,19 @@ def reposts():
                            reposts=reposts,
                            orig_media=orig_media)
 
+from app.crud import add_institute, get_institutes
+
+@app.route("/institutes", methods=["GET", "POST"])
+def institutes():
+    if request.method == "POST":
+        name = request.form["name"].strip()
+        if name:
+            add_institute(name)
+        return redirect("/institutes")
+
+    insts = get_institutes()
+    return render_template("institutes.html", institutes=insts)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
