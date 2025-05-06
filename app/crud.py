@@ -134,6 +134,13 @@ def get_repost(orig_media=None):
         )
     return run_query("SELECT * FROM Repost", fetch=True)
 
+# app/crud.py
+
+def get_reposts(orig_media=None):
+    """Return all reposts, optionally filtered by original media."""
+    return get_repost(orig_media)
+
+
 def update_repost(orig_media, orig_user, orig_time, repost_time, **fields):
     cols=[]; vals=[]
     for k,v in fields.items(): cols.append(f"{k} = %s"); vals.append(v)
