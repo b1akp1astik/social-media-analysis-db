@@ -81,15 +81,20 @@ Optional but recommended:
 
 2. **Create** the empty database & tables:
    ```bash
-   mysql -u root -p < db/schema/create_tables.sql
+   mysql -u root -p
+   ```
+   Then inside the `mysql>` prompt:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS social_media;
+   USE social_media;
+   SOURCE db/schema/create_tables.sql;
+   EXIT;
    ```
 
 3. **(Optional)** Load sample data:
-   ```bash
-   mysql -u root -p social_media < db/dumps/social_media_dump.sql
-   ```
+   Open db/dumps/social_media_dump.sql in DBeaver → Execute.
 
-4. **Grant** your app user privileges (if you’re not using `root`):
+4. **Grant** your app user privileges (if you’re not using `root` on `db_config.py`):
    ```sql
    CREATE USER 'cs5330'@'localhost' IDENTIFIED BY 'your_password';
    GRANT ALL PRIVILEGES ON social_media.* TO 'cs5330'@'localhost';
