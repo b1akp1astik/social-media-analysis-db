@@ -275,3 +275,20 @@ def delete_post_analysis(project_name, field_name, media, username, time_posted)
 
 def get_users(media=None):
     return get_user(media)   # returns all users for a media if given, or empty list otherwise
+
+def get_posts(media=None, username=None):
+    """
+    Return all posts, optionally filtered by media name and/or username.
+    """
+    sql = "SELECT * FROM Post"
+    params = []
+    clauses = []
+    if media:
+        clauses.append("MediaName=%s")
+        params.append(media)
+    if username:
+        clauses.append("Username=%s")
+        params.append(username)
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    return run_query(sql, params, fetch=True)
