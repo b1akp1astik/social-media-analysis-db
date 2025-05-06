@@ -79,5 +79,29 @@ def posts():
         error=error
     )
 
+from app.crud import add_repost, get_reposts
+
+@app.route("/reposts", methods=["GET", "POST"])
+def reposts():
+    if request.method == "POST":
+        orig_media   = request.form["orig_media"].strip()
+        orig_user    = request.form["orig_user"].strip()
+        orig_time    = request.form["orig_time"].strip()
+        rep_media    = request.form["rep_media"].strip()
+        rep_user     = request.form["rep_user"].strip()
+        repost_time  = request.form["repost_time"].strip()
+
+        # (Optional: validate timestamps here)
+        add_repost(orig_media, orig_user, orig_time,
+                   rep_media, rep_user, repost_time)
+        return redirect(f"/reposts?orig_media={orig_media}")
+
+    orig_media = request.args.get("orig_media", "")
+    reposts    = get_reposts(orig_media)
+    return render_template("reposts.html",
+                           reposts=reposts,
+                           orig_media=orig_media)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
