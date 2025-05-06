@@ -1,0 +1,24 @@
+<!-- templates/media.html -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Social Media Platforms</title>
+  </head>
+  <body>
+    <h1>Social Media Platforms</h1>
+    <form method="post">
+      <input name="name" placeholder="New media name" required>
+      <button type="submit">Add</button>
+    </form>
+
+    <h2>Existing</h2>
+    <ul>
+      {% for m in medias %}
+        <li>{{ m.MediaName }}</li>
+      {% else %}
+        <li><em>— no platforms yet —</em></li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
