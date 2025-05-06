@@ -236,6 +236,29 @@ def search_posts():
             row["Projects"] = [r["ProjectName"] for r in projs]
     return render_template("search_posts.html", criteria=criteria, results=results)
 
+from app.crud import get_experiment_results, get_fields
+
+@app.route("/search-experiments", methods=["GET","POST"])
+def search_experiments():
+    project = ""
+    results = []
+    percentages = {}
+    if request.method == "POST":
+        project = request.form["project"].strip()
+        results = get_experiment_results(project)
+        # compute % coverage per field
+        fields = [f["FieldName"] for f in get_fields(project)]
+        total  = len({(r["MediaName"],r["Username"],r["TimePosted"]) for r in results})
+        for fld in fields:
+            count = sum(1 for r in results if r["FieldName"]==fld and r["Value"])
+            percentages[fld] = f"{(count/total*100):.1f}%" if total else "0%"
+    return render_template(
+        "search_experiments.html",
+        project=project,
+        results=results,
+        percentages=percentages
+    )
+
 
 if __name__ == "__main__":
     app.run(debug=True)
