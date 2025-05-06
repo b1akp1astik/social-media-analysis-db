@@ -272,3 +272,6 @@ def delete_post_analysis(project_name, field_name, media, username, time_posted)
       WHERE ProjectName=%s AND FieldName=%s AND MediaName=%s AND Username=%s AND TimePosted=%s
     """
     return run_query(sql, (project_name, field_name, media, username, time_posted))
+
+def get_users(media=None):
+    return get_user(media)   # returns all users for a media if given, or empty list otherwise
