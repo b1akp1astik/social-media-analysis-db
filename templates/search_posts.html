@@ -1,37 +1,36 @@
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Search Posts</title></head>
-  <body>
-    <h1>Search Posts</h1>
-    <form method="post">
-      <input name="media"      placeholder="Media">
-      <input name="username"   placeholder="Username">
-      <input name="first_name" placeholder="Poster First Name">
-      <input name="last_name"  placeholder="Poster Last Name">
-      <input name="start_time" placeholder="Start (YYYY-MM-DD HH:MM:SS)">
-      <input name="end_time"   placeholder="End   (YYYY-MM-DD HH:MM:SS)">
-      <button type="submit">Search</button>
-    </form>
+{% extends "base.html" %}
+{% block title %}Search Posts{% endblock %}
 
-    {% if results %}
-      <h2>Results ({{ results|length }})</h2>
-      <table border="1">
-        <tr>
-          <th>Time</th><th>Media/User</th><th>Poster Name</th>
-          <th>Text</th><th>Projects</th>
-        </tr>
-        {% for p in results %}
-        <tr>
-          <td>{{ p.TimePosted }}</td>
-          <td>{{ p.MediaName }}/{{ p.Username }}</td>
-          <td>{{ p.FirstName }} {{ p.LastName }}</td>
-          <td>{{ p.TextContent }}</td>
-          <td>{{ p.Projects|join(", ") }}</td>
-        </tr>
-        {% endfor %}
-      </table>
-    {% endif %}
+{% block content %}
+  <h1>Search Posts</h1>
+  <form method="post">
+    <input name="media"      placeholder="Media">
+    <input name="username"   placeholder="Username">
+    <input name="first_name" placeholder="Poster First Name">
+    <input name="last_name"  placeholder="Poster Last Name">
+    <input name="start_time" placeholder="Start (YYYY-MM-DD HH:MM:SS)">
+    <input name="end_time"   placeholder="End   (YYYY-MM-DD HH:MM:SS)">
+    <button type="submit">Search</button>
+  </form>
 
-    <p><a href="/analyses">← back to Analyses</a></p>
-  </body>
-</html>
+  {% if results %}
+    <h2>Results ({{ results|length }})</h2>
+    <table border="1">
+      <tr>
+        <th>Time</th><th>Media/User</th><th>Poster Name</th>
+        <th>Text</th><th>Projects</th>
+      </tr>
+      {% for p in results %}
+      <tr>
+        <td>{{ p.TimePosted }}</td>
+        <td>{{ p.MediaName }}/{{ p.Username }}</td>
+        <td>{{ p.FirstName }} {{ p.LastName }}</td>
+        <td>{{ p.TextContent }}</td>
+        <td>{{ p.Projects|join(", ") }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+
+  <p><a href="/analyses">← back to Analyses</a></p>
+{% endblock %}

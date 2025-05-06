@@ -1,33 +1,31 @@
-<!-- templates/project_posts.html -->
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Project-Post Links</title></head>
-  <body>
-    <h1>Project-Post Associations</h1>
+{% extends "base.html" %}
+{% block title %}Project-Post Links{% endblock %}
 
-    <form method="post">
-      <label>Project:</label>
-      <input name="project" value="{{ project }}" placeholder="ProjectName" required>
-      <label>Media:</label>
-      <input name="media" placeholder="MediaName" required>
-      <label>Username:</label>
-      <input name="username" placeholder="Username" required>
-      <label>TimePosted:</label>
-      <input name="time_posted" placeholder="YYYY-MM-DD HH:MM:SS" required>
-      <button type="submit">Link Post to Project</button>
-    </form>
+{% block content %}
+  <h1>Project-Post Associations</h1>
 
-    <h2>Existing Links{% if project %} for {{ project }}{% endif %}</h2>
-    <ul>
-      {% for l in links %}
-        <li>
-          {{ l.ProjectName }} ← [{{ l.MediaName }}/{{ l.Username }} @ {{ l.TimePosted }}]
-        </li>
-      {% else %}
-        <li><em>-- none yet --</em></li>
-      {% endfor %}
-    </ul>
+  <form method="post">
+    <label>Project:</label>
+    <input name="project" value="{{ project }}" placeholder="ProjectName" required>
+    <label>Media:</label>
+    <input name="media" placeholder="MediaName" required>
+    <label>Username:</label>
+    <input name="username" placeholder="Username" required>
+    <label>TimePosted:</label>
+    <input name="time_posted" placeholder="YYYY-MM-DD HH:MM:SS" required>
+    <button type="submit">Link Post to Project</button>
+  </form>
 
-    <p><a href="/fields">← back to Fields</a></p>
-  </body>
-</html>
+  <h2>Existing Links{% if project %} for {{ project }}{% endif %}</h2>
+  <ul>
+    {% for l in links %}
+      <li>
+        {{ l.ProjectName }} ← [{{ l.MediaName }}/{{ l.Username }} @ {{ l.TimePosted }}]
+      </li>
+    {% else %}
+      <li><em>-- none yet --</em></li>
+    {% endfor %}
+  </ul>
+
+  <p><a href="/fields">← back to Fields</a></p>
+{% endblock %}

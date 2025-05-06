@@ -1,41 +1,37 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Reposts</title>
-  </head>
-  <body>
-    <h1>Reposts</h1>
+{% extends "base.html" %}
+{% block title %}Reposts{% endblock %}
 
-    <form method="post">
-      <fieldset>
-        <legend>Original Post</legend>
-        <label>Media:     <input name="orig_media"  value="{{ orig_media }}"></label>
-        <label>User:      <input name="orig_user"   ></label>
-        <label>TimePosted:<input name="orig_time"   placeholder="YYYY-MM-DD HH:MM:SS"></label>
-      </fieldset>
-      <fieldset>
-        <legend>Reposter</legend>
-        <label>Media:     <input name="rep_media"   ></label>
-        <label>User:      <input name="rep_user"    ></label>
-        <label>RepostTime:<input name="repost_time" placeholder="YYYY-MM-DD HH:MM:SS"></label>
-      </fieldset>
-      <button type="submit">Add Repost</button>
-    </form>
+{% block content %}
+  <h1>Reposts</h1>
 
-    <h2>Existing Reposts</h2>
-    <ul>
-      {% for r in reposts %}
-        <li>
-          Orig: [{{ r.OrigMedia }}/{{ r.OrigUser }} @ {{ r.OrigTime }}]
-          &rarr;
-          Rep:  [{{ r.ReposterMedia }}/{{ r.ReposterUser }} @ {{ r.RepostTime }}]
-        </li>
-      {% else %}
-        <li><em>-- no reposts yet --</em></li>
-      {% endfor %}
-    </ul>
+  <form method="post">
+    <fieldset>
+      <legend>Original Post</legend>
+      <label>Media:     <input name="orig_media"  value="{{ orig_media }}"></label>
+      <label>User:      <input name="orig_user"   ></label>
+      <label>TimePosted:<input name="orig_time"   placeholder="YYYY-MM-DD HH:MM:SS"></label>
+    </fieldset>
+    <fieldset>
+      <legend>Reposter</legend>
+      <label>Media:     <input name="rep_media"   ></label>
+      <label>User:      <input name="rep_user"    ></label>
+      <label>RepostTime:<input name="repost_time" placeholder="YYYY-MM-DD HH:MM:SS"></label>
+    </fieldset>
+    <button type="submit">Add Repost</button>
+  </form>
 
-    <p><a href="/posts">← back to Posts</a></p>
-  </body>
-</html>
+  <h2>Existing Reposts</h2>
+  <ul>
+    {% for r in reposts %}
+      <li>
+        Orig: [{{ r.OrigMedia }}/{{ r.OrigUser }} @ {{ r.OrigTime }}]
+        → 
+        Rep:  [{{ r.ReposterMedia }}/{{ r.ReposterUser }} @ {{ r.RepostTime }}]
+      </li>
+    {% else %}
+      <li><em>-- no reposts yet --</em></li>
+    {% endfor %}
+  </ul>
+
+  <p><a href="/posts">← back to Posts</a></p>
+{% endblock %}

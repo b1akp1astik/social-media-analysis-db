@@ -1,24 +1,22 @@
-<!-- templates/institutes.html -->
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Institutes</title></head>
-  <body>
-    <h1>Institutes</h1>
+{% extends "base.html" %}
+{% block title %}Institutes{% endblock %}
 
-    <form method="post">
-      <input name="name" placeholder="Institute name" required>
-      <button type="submit">Add Institute</button>
-    </form>
+{% block content %}
+  <h1>Institutes</h1>
 
-    <h2>Existing</h2>
-    <ul>
-      {% for i in institutes %}
-        <li>{{ i.InstituteName }}</li>
-      {% else %}
-        <li><em>-- no institutes yet --</em></li>
-      {% endfor %}
-    </ul>
+  <form method="post">
+    <input name="name" placeholder="Institute name" required>
+    <button type="submit">Add Institute</button>
+  </form>
 
-    <p><a href="/reposts">← back to Reposts</a></p>
-  </body>
-</html>
+  <h2>Existing</h2>
+  <ul>
+    {% for i in institutes %}
+      <li>{{ i.InstituteName }}</li>
+    {% else %}
+      <li><em>-- no institutes yet --</em></li>
+    {% endfor %}
+  </ul>
+
+  <p><a href="/reposts">← back to Reposts</a></p>
+{% endblock %}

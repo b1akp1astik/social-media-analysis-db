@@ -1,0 +1,25 @@
+<!-- templates/base.html -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}Social-Media DB{% endblock %}</title>
+  </head>
+  <body>
+    <nav>
+      <a href="/media">Media</a> |
+      <a href="/users">Users</a> |
+      <a href="/posts">Posts</a> |
+      <a href="/reposts">Reposts</a> |
+      <a href="/institutes">Institutes</a> |
+      <a href="/projects">Projects</a> |
+      <a href="/fields">Fields</a> |
+      <a href="/project-posts">Links</a> |
+      <a href="/analyses">Analyses</a> |
+      <a href="/search-posts">Search Posts</a> |
+      <a href="/search-experiments">Search Experiments</a>
+    </nav>
+    <hr>
+    {% block content %}{% endblock %}
+  </body>
+</html>

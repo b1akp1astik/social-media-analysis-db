@@ -1,33 +1,32 @@
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Projects</title></head>
-  <body>
-    <h1>Projects</h1>
+{% extends "base.html" %}
+{% block title %}Projects{% endblock %}
 
-    <form method="post">
-      <input name="name"       placeholder="Project name"      required>
-      <input name="mgr_first"  placeholder="Manager first name" required>
-      <input name="mgr_last"   placeholder="Manager last name"  required>
-      <input name="institute"  placeholder="Institute name"     required>
-      <input name="start_date" placeholder="Start date (YYYY-MM-DD)" required>
-      <input name="end_date"   placeholder="End date (YYYY-MM-DD)"   required>
-      <button type="submit">Add Project</button>
-    </form>
+{% block content %}
+  <h1>Projects</h1>
 
-    <h2>Existing</h2>
-    <ul>
-      {% for p in projects %}
-        <li>
-          {{ p.ProjectName }} —
-          {{ p.ManagerFirstName }} {{ p.ManagerLastName }},
-          {{ p.InstituteName }},
-          {{ p.StartDate }} to {{ p.EndDate }}
-        </li>
-      {% else %}
-        <li><em>-- no projects yet --</em></li>
-      {% endfor %}
-    </ul>
+  <form method="post">
+    <input name="name"       placeholder="Project name"      required>
+    <input name="mgr_first"  placeholder="Manager first name" required>
+    <input name="mgr_last"   placeholder="Manager last name"  required>
+    <input name="institute"  placeholder="Institute name"     required>
+    <input name="start_date" placeholder="Start date (YYYY-MM-DD)" required>
+    <input name="end_date"   placeholder="End date (YYYY-MM-DD)"   required>
+    <button type="submit">Add Project</button>
+  </form>
 
-    <p><a href="/institutes">← back to Institutes</a></p>
-  </body>
-</html>
+  <h2>Existing</h2>
+  <ul>
+    {% for p in projects %}
+      <li>
+        {{ p.ProjectName }} — 
+        {{ p.ManagerFirstName }} {{ p.ManagerLastName }},
+        {{ p.InstituteName }},
+        {{ p.StartDate }} to {{ p.EndDate }}
+      </li>
+    {% else %}
+      <li><em>-- no projects yet --</em></li>
+    {% endfor %}
+  </ul>
+
+  <p><a href="/institutes">← back to Institutes</a></p>
+{% endblock %}
