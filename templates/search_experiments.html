@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Search Experiments</title></head>
+  <body>
+    <h1>Search Experiments</h1>
+    <form method="post">
+      <input name="project" placeholder="Project Name" required>
+      <button type="submit">Search</button>
+    </form>
+
+    {% if results %}
+      <h2>Results for {{ project }} ({{ results|length }} rows)</h2>
+      <table border="1">
+        <tr>
+          <th>Media/User</th><th>TimePosted</th>
+          <th>Field</th><th>Value</th>
+        </tr>
+        {% for r in results %}
+        <tr>
+          <td>{{ r.MediaName }}/{{ r.Username }}</td>
+          <td>{{ r.TimePosted }}</td>
+          <td>{{ r.FieldName or "(none)" }}</td>
+          <td>{{ r.Value or "(none)" }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <h3>Field Coverage</h3>
+      <ul>
+        {% for fld, pct in percentages.items() %}
+          <li>{{ fld }}: {{ pct }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <p><a href="/search-posts">← back to Search Posts</a></p>
+  </body>
+</html>
