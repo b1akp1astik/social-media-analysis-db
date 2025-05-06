@@ -36,26 +36,48 @@ def users():
     users = get_users(media)
     return render_template("user.html", users=users, media=media)
 
+from datetime import datetime
+from flask import Flask, request, redirect, render_template, url_for
 from app.crud import add_post, get_posts
 
 @app.route("/posts", methods=["GET", "POST"])
 def posts():
+    error = None
+    media    = ""
+    username = ""
     if request.method == "POST":
         media    = request.form["media"].strip()
         username = request.form["username"].strip()
-        time     = request.form["time"].strip()
+        time_str = request.form["time"].strip()
         text     = request.form["text"].strip()
-        add_post(media, username, time, text)
-        return redirect(f"/posts?media={media}&username={username}")
 
-    media    = request.args.get("media", "")
-    username = request.args.get("username", "")
-    posts    = get_posts(media, username)
-    return render_template("posts.html",
-                           posts=posts,
-                           media=media,
-                           username=username)
+        # 1) Validate timestamp format
+        try:
+            # this will raise ValueError on bad format
+            datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            error = "Time must be in YYYY-MM-DD HH:MM:SS format."
+        else:
+            # only insert if valid
+            add_post(media, username, time_str, text)
+            return redirect(url_for("posts",
+                                    media=media,
+                                    username=username))
 
+    else:
+        # on GET, pre-fill from querystring
+        media    = request.args.get("media", "")
+        username = request.args.get("username", "")
+
+    # In both the GET case and a POST with error, re-render
+    posts = get_posts(media, username)
+    return render_template(
+        "posts.html",
+        posts=posts,
+        media=media,
+        username=username,
+        error=error
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)

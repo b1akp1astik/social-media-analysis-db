@@ -2,6 +2,16 @@
 <html>
   <head><meta charset="utf-8"><title>Posts</title></head>
   <body>
+
+    <!-- ERROR MESSAGE -->
+    {% if error %}
+      <p style="color: red;"><strong>{{ error }}</strong></p>
+    {% endif %}
+
+    <form method="post">
+      <!-- ... your inputs ... -->
+    </form>
+
     <h1>Posts</h1>
     <form method="post">
       <label>Media:</label>
