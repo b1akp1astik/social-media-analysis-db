@@ -68,7 +68,6 @@ social-media-analysis-db/
 
 Optional but recommended:  
 - **DBeaver** (or another MySQL GUI)  
-- **Docker & docker-compose** (for an easy MySQL container)
 
 ---
 
@@ -171,6 +170,55 @@ We’re working in four sprints, each with clear roles:
   - `fix(posts): validate timestamp format`  
 
 Open a **Pull Request** for each feature, request a review, and merge into `develop` → `main`.
+
+---
+
+## Next Steps
+
+Before wrapping up, tighten every corner and ensure full compliance:
+
+1. **Styling**  
+   Add minimal CSS in `base.html` (or a `static/style.css`) for consistent padding, fonts, and button/table styles:
+   ```html
+   <style>
+     body { font-family: sans-serif; margin: 1rem; }
+     nav a { margin-right: .5rem; text-decoration: none; }
+     form input, form button { margin: .25rem 0; display: block; }
+     table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+     th, td { border: 1px solid #ccc; padding: .5rem; }
+   </style>
+  ```
+2. **Robust Error Handling**
+
+- Validate every form field (required inputs, date formats via `datetime.strptime`, numeric limits, etc.).
+- Use Flask’s `flash()` + `get_flashed_messages()` to show success, warning, and error messages at the top of each page.
+- Gracefully handle missing lookups (e.g. non-existent project) with user-friendly messages.
+
+3. **Update & Delete Flows**
+
+- Add **Edit** and **Delete** links/buttons next to each list item.
+- Implement corresponding routes (`/media/edit/<…>`, `/media/delete/<…>`, etc.) with confirmation prompts.
+- Ensure referential integrity: prevent orphaned rows or cascade/delete safely.
+
+4. **Automated Testing**
+
+- Extend **pytest** to cover negative cases: invalid timestamps, missing fields, constraint violations.
+- Use Flask’s test client to simulate form submissions, check response codes, redirects, and flashed messages.
+- (Optional) Add a few Selenium or Playwright smoke tests for key workflows.
+
+5. **Final Report**
+
+Following the example PDF, include:
+
+1. **Introduction** – problem statement & scope  
+2. **ER Diagram** – embed `er_diagram.png` with annotations  
+3. **Schema** – `CREATE TABLE` statements with comments on PK/FK/constraints  
+4. **CRUD & UI Overview** – map each screen/route to its DB operations  
+5. **Installation & User Manual** – copy your README steps with screenshots  
+6. **Screenshots** – key pages (Media, Posts, Search, etc.)  
+7. **Appendix** – sample SQL queries, edge-case notes, future enhancements  
+
+Once these are in place, your app will be rock-solid, fully documented, and demo-ready for the final submission!
 
 ---
 
