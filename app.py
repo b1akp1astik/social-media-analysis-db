@@ -178,6 +178,34 @@ def project_posts():
         links=links
     )
 
+from app.crud import add_post_analysis, get_post_analyses
+
+@app.route("/analyses", methods=["GET", "POST"])
+def analyses():
+    error = None
+    if request.method == "POST":
+        proj      = request.form["project"].strip()
+        field     = request.form["field_name"].strip()
+        media     = request.form["media"].strip()
+        username  = request.form["username"].strip()
+        time_post = request.form["time_posted"].strip()
+        value     = request.form["value"].strip()
+
+        if not all([proj, field, media, username, time_post, value]):
+            error = "All fields are required."
+        else:
+            add_post_analysis(proj, field, media, username, time_post, value)
+            return redirect(f"/analyses?project={proj}")
+
+    proj     = request.args.get("project", "")
+    results  = get_post_analyses(proj)
+    return render_template(
+        "analyses.html",
+        analyses=results,
+        project=proj,
+        error=error
+    )
+
 
 if __name__ == "__main__":
     app.run(debug=True)
