@@ -299,3 +299,8 @@ def get_posts(media=None, username=None):
     if clauses:
         sql += " WHERE " + " AND ".join(clauses)
     return run_query(sql, params, fetch=True)
+
+def get_institutes():
+    """Return all rows from Institute."""
+    return run_query("SELECT * FROM Institute", fetch=True)
+
