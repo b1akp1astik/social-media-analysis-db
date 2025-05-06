@@ -115,6 +115,23 @@ def institutes():
     insts = get_institutes()
     return render_template("institutes.html", institutes=insts)
 
+from app.crud import add_project, get_projects
+
+@app.route("/projects", methods=["GET", "POST"])
+def projects():
+    if request.method == "POST":
+        name      = request.form["name"].strip()
+        mgr_first = request.form["mgr_first"].strip()
+        mgr_last  = request.form["mgr_last"].strip()
+        inst      = request.form["institute"].strip()
+        start     = request.form["start_date"].strip()
+        end       = request.form["end_date"].strip()
+        add_project(name, mgr_first, mgr_last, inst, start, end)
+        return redirect("/projects")
+
+    projs = get_projects()
+    return render_template("projects.html", projects=projs)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
