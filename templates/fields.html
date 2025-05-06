@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Fields</title></head>
+  <body>
+    <h1>Fields</h1>
+
+    {% if error %}
+      <p style="color: red;"><strong>{{ error }}</strong></p>
+    {% endif %}
+
+    <form method="post">
+      <label>Project:</label>
+      <input name="project" value="{{ project }}" placeholder="ProjectName" required>
+      <label>Field Name:</label>
+      <input name="field_name" placeholder="e.g. Sentiment" required>
+      <button type="submit">Add Field</button>
+    </form>
+
+    <h2>Existing Fields{% if project %} for {{ project }}{% endif %}</h2>
+    <ul>
+      {% for f in fields %}
+        <li>{{ f.ProjectName }} → {{ f.FieldName }}</li>
+      {% else %}
+        <li><em>-- no fields yet --</em></li>
+      {% endfor %}
+    </ul>
+
+    <p><a href="/projects">← back to Projects</a></p>
+  </body>
+</html>
