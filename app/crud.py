@@ -330,3 +330,36 @@ def get_post_analyses(project_name=""):
     Return all PostAnalysis rows, optionally filtered by project_name.
     """
     return get_post_analysis(project_name)
+
+def find_posts(media=None, username=None, first=None, last=None, 
+               start=None, end=None):
+    """
+    Return posts filtered by:
+      - media (exact)
+      - username (exact)
+      - poster first name (exact)
+      - poster last name (exact)
+      - start/end timestamps (inclusive)
+    """
+    sql = """
+      SELECT p.*, u.FirstName, u.LastName
+      FROM Post p
+      JOIN User u ON p.MediaName=u.MediaName AND p.Username=u.Username
+    """
+    clauses, params = [], []
+    if media:
+        clauses.append("p.MediaName=%s"); params.append(media)
+    if username:
+        clauses.append("p.Username=%s"); params.append(username)
+    if first:
+        clauses.append("u.FirstName=%s"); params.append(first)
+    if last:
+        clauses.append("u.LastName=%s"); params.append(last)
+    if start:
+        clauses.append("p.TimePosted >= %s"); params.append(start)
+    if end:
+        clauses.append("p.TimePosted <= %s"); params.append(end)
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " ORDER BY p.TimePosted DESC"
+    return run_query(sql, params, fetch=True)
