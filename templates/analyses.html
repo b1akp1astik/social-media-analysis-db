@@ -1,0 +1,43 @@
+<!-- templates/analyses.html -->
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Analyses</title></head>
+  <body>
+    <h1>Post Analyses</h1>
+
+    {% if error %}
+      <p style="color: red;"><strong>{{ error }}</strong></p>
+    {% endif %}
+
+    <form method="post">
+      <label>Project:</label>
+      <input name="project" value="{{ project }}" required>
+      <label>Field Name:</label>
+      <input name="field_name" placeholder="e.g. Sentiment" required>
+      <label>Media:</label>
+      <input name="media" placeholder="MediaName" required>
+      <label>Username:</label>
+      <input name="username" placeholder="Username" required>
+      <label>TimePosted:</label>
+      <input name="time_posted" placeholder="YYYY-MM-DD HH:MM:SS" required>
+      <label>Value:</label>
+      <input name="value" placeholder="Analysis result" required>
+      <button type="submit">Record Analysis</button>
+    </form>
+
+    <h2>Existing Analyses{% if project %} for {{ project }}{% endif %}</h2>
+    <ul>
+      {% for a in analyses %}
+        <li>
+          {{ a.ProjectName }} | {{ a.FieldName }} →
+          [{{ a.MediaName }}/{{ a.Username }} @ {{ a.TimePosted }}]:
+          {{ a.Value }}
+        </li>
+      {% else %}
+        <li><em>-- none yet --</em></li>
+      {% endfor %}
+    </ul>
+
+    <p><a href="/project-posts">← back to Project-Post Links</a></p>
+  </body>
+</html>
