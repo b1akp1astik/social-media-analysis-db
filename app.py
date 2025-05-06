@@ -1,6 +1,6 @@
 # app.py
 from flask import Flask, request, redirect, render_template, url_for
-from app.crud import add_media, get_media, add_user, get_user
+from app.crud import add_media, get_media, add_user, get_user, run_query
 
 app = Flask(__name__)
 

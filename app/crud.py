@@ -363,3 +363,23 @@ def find_posts(media=None, username=None, first=None, last=None,
         sql += " WHERE " + " AND ".join(clauses)
     sql += " ORDER BY p.TimePosted DESC"
     return run_query(sql, params, fetch=True)
+
+def get_experiment_results(project_name):
+    """
+    Return all posts linked to the given project, along with
+    each field's value (if entered).
+    """
+    # Join ProjectPost → PostAnalysis → Field
+    sql = """
+      SELECT pp.MediaName, pp.Username, pp.TimePosted,
+             pa.FieldName, pa.Value
+      FROM ProjectPost pp
+      LEFT JOIN PostAnalysis pa
+        ON pp.ProjectName=pa.ProjectName
+       AND pp.MediaName=pa.MediaName
+       AND pp.Username=pa.Username
+       AND pp.TimePosted=pa.TimePosted
+      WHERE pp.ProjectName=%s
+      ORDER BY pp.TimePosted
+    """
+    return run_query(sql, (project_name,), fetch=True)
