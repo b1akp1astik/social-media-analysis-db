@@ -206,6 +206,36 @@ def analyses():
         error=error
     )
 
+from app.crud import find_posts, get_project_posts
+
+@app.route("/search-posts", methods=["GET","POST"])
+def search_posts():
+    criteria = {}
+    results = []
+    if request.method == "POST":
+        # collect form inputs
+        criteria = {
+            'media':    request.form.get("media","").strip() or None,
+            'username': request.form.get("username","").strip() or None,
+            'first':    request.form.get("first_name","").strip() or None,
+            'last':     request.form.get("last_name","").strip() or None,
+            'start':    request.form.get("start_time","").strip() or None,
+            'end':      request.form.get("end_time","").strip() or None,
+        }
+        results = find_posts(**criteria)
+        # for each post, also fetch associated projects
+        for row in results:
+            links = get_project_posts(row["ProjectName"] if "ProjectName" in row else "")
+            # Actually, better: query ProjectPost per (media,username,time)
+            projs = run_query(
+                "SELECT ProjectName FROM ProjectPost "
+                "WHERE MediaName=%s AND Username=%s AND TimePosted=%s",
+                (row["MediaName"], row["Username"], row["TimePosted"]),
+                fetch=True
+            )
+            row["Projects"] = [r["ProjectName"] for r in projs]
+    return render_template("search_posts.html", criteria=criteria, results=results)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
