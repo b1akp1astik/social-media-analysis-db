@@ -1,148 +1,177 @@
 # Social Media Analysis DB Project
 
-**Spring 2025, CS 5330/7330 Group Project**
+**Spring 2025, CS 5330/7330 Group Project**
+
+---
 
 ## Project Goal
 
-Build a general-purpose database system to store social media text posts and the results of multiple analysis projects. The application will allow:
-- Entry of users, posts, reposts, projects, and analysis results
-- Querying posts by media, time range, user, and poster name
-- Querying projects to list associated posts and their analysis completion rates
+Build a general-purpose database system to store:
+- **Social media text posts** (and reposts)  
+- **Users** (per-platform)  
+- **Analysis “projects”**, each defining a set of **fields**  
+- **Results** of those analyses for each post  
 
+The web-app lets you:
+1. **Create & List** every entity: Media, Users, Posts, Reposts, Institutes, Projects, Fields, Project-Post links, Analyses  
+2. **Search Posts** by media, time range, username or poster name (and see which projects have analyzed them)  
+3. **Search Experiments** by project name (and see per-field coverage %)  
+
+---
 
 ## Repo Structure
 
 ```
-├─ db/
-│  ├─ schema/
-│  │  └─ create_tables.sql        # DDL for all tables, FKs, and constraints
-│  └─ dumps/
-│     └─ social_media_dump.sql    # mysqldump export of schema + seed data
-├─ app/
-│  ├─ db_config.py.template      # Copy to db_config.py with your credentials
-│  ├─ db.py                      # MySQL connection helper
-│  ├─ crud.py                    # Basic CRUD functions (SocialMedia so far)
-│  ├─ models.py                  # (Future) data models
-│  └─ templates/
-│     └─ index.html              # Sample Flask UI for SocialMedia list and add
-├─ app.py                        # Flask web server entry point
-├─ requirements.txt              # Python dependencies (Flask, mysql-connector)
-└─ README.md                     # This file
+social-media-analysis-db/
+│
+├── db/
+│   ├── schema/
+│   │   └── create_tables.sql       # DDL: all CREATE TABLE, FKs & CHECKs
+│   └── dumps/
+│       └── social_media_dump.sql   # mysqldump of schema + sample seed data
+│
+├── app/
+│   ├── db_config.py.template       # copy → db_config.py with your credentials
+│   ├── db.py                       # MySQL connection & run_query() helper
+│   └── crud.py                     # all add_/get_/find_ functions
+│
+├── templates/                      # Jinja2 HTML templates
+│   ├── base.html                   # global nav + common layout
+│   ├── media.html                  # Create/List SocialMedia
+│   ├── user.html                   # Create/List Users
+│   ├── posts.html                  # Create/List Posts
+│   ├── reposts.html                # Create/List Reposts
+│   ├── institutes.html             # Create/List Institutes
+│   ├── projects.html               # Create/List Projects
+│   ├── fields.html                 # Create/List Fields
+│   ├── project_posts.html          # Create/List Project-Post links
+│   ├── analyses.html               # Create/List PostAnalyses
+│   ├── search_posts.html           # Search Posts form & results
+│   └── search_experiments.html     # Search Experiments form & results
+│
+├── tests/
+│   └── test_crud.py                # pytest unit tests for crud layer
+│
+├── app.py                          # Flask application entry point
+├── requirements.txt                # Flask, mysql-connector-python, pytest
+├── .gitignore                      # ignore venv, pycache, db_config.py, etc.
+└── README.md                       # this file
 ```
-
-
-## Prerequisites
-
-- **Python 3.x**
-- **MySQL** (or MariaDB) server
-- **DBeaver** (or another MySQL client)
-- **Git**
-
-
-## Database Setup
-
-Clone the repo and import the provided dump so you’re all working off the same `social_media` database.
-
-### Method 1: Command‑Line Import
-```bash
-git clone <repo-url>
-cd social-media-db/db/dumps
-mysql -u <your_mysql_user> -p < social_media_dump.sql
-```
-
-### Method 2: DBeaver Backup/Restore
-1. In DBeaver, right‑click your MySQL connection → **Tools → Restore**
-2. Select `social_media_dump.sql` and run
-
-### Method 3: Docker Compose (optional)
-If you have Docker Desktop installed, from the repo root:
-```bash
-docker-compose up -d
-```
-This will start a MySQL container with `social_media` already initialized.
-
-
-## Running the Application
-
-1. Copy `app/db_config.py.template` → `app/db_config.py` and fill in your DB credentials.
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Start the Flask server:
-   ```bash
-   python app.py
-   ```
-4. Navigate to <http://127.0.0.1:5000> to view and add SocialMedia entries.
-
-
-## What We Have So Far
-
-- **Database schema** defined in `db/schema/create_tables.sql`
-- **Database dump** (`social_media_dump.sql`) with sample data for SocialMedia
-- **Python helpers** (`app/db.py`) and **CRUD** for the SocialMedia entity
-- **Basic Flask UI** (`app.py` + `templates/index.html`) to list/add SocialMedia platforms
-
-
-## Our Plan of Action
-
-We’ve organized the work into four sprints, with clear deliverables and task ownership:
-
-### Sprint 0: Kickoff & Environment Setup
-- **Tasks:**
-  - Create GitHub repo and branches (`main`, `develop`, `feature/*`).
-  - Install and configure MySQL, Python, Flask, DBeaver, and Git.
-  - Finalize ER‑model and relational schema in `db/schema/create_tables.sql`.
-  - Verify local creation of the `social_media` database and tables.
-  - Agree on coding standards and CI basics.
-
-### Sprint 1: Core Database & CRUD Backend
-- **Person A (DB Lead):**
-  - Finalize DDL and seed scripts under `db/schema`.
-  - Document SQL operations (`INSERT`, `SELECT`) in `db/sql/`.
-- **Person B (Backend Lead):**
-  - Implement Python DB connector and `run_query()` helper in `app/db.py`.
-  - Build CRUD functions (`add_user()`, `add_post()`, etc.) in `app/crud.py`.
-  - Write unit tests (pytest) against sample data.
-- **Person C (UI Lead):**
-  - Draft wireframes for data‑entry and query forms.
-  - Scaffold static Flask templates for SocialMedia, User, Post, etc.
-
-### Sprint 2: Web Interface & Query Features
-- **Person A:**
-  - Develop complex SQL queries for post/project searches and analysis summaries.
-- **Person B:**
-  - Expose queries as Python functions and Flask endpoints (`/search_posts`, `/search_experiments`).
-- **Person C:**
-  - Connect forms to real API endpoints, render results in HTML tables, and polish navigation.
-
-### Sprint 3: Integration, Testing & Documentation
-- **All Team Members:**
-  - Conduct end‑to‑end testing of key workflows, report bugs, and fix.
-  - Validate constraints (unique posts, date checks, partial analysis entry).
-  - Prepare final report sections:
-    - A: Database schema annotations (CREATE TABLE statements).
-    - B: Installation & usage guide.
-    - C: User manual with screenshots and sample flows.
-  - Dry‑run demo and ensure each feature works seamlessly.
-
-
-## Next Steps & Division of Work
-
-| Person | Focus                                   | Deliverables                            |
-|--------|-----------------------------------------|-----------------------------------------|
-| A      | CRUD functions for User, Post, etc.     | `crud.py` functions and unit tests      |
-| B      | Data‑entry UI forms for all entities    | Flask routes + templates (add/edit)     |
-| C      | Query pages (posts & experiments)       | Flask routes + templates (search pages) |
-
-
-## Contributing Guidelines
-
-- **Branch naming**: `feature/<area>` (e.g. `feature/crud-post`)
-- **Commit messages**: concise, imperative (“Add create_post function”)
-- Open a **Pull Request** for each feature and assign a reviewer.
 
 ---
 
-Let’s keep this repo in sync and iterate on functionality. Happy coding!
+## Prerequisites
 
+- **Python 3.7+**  
+- **MySQL** (or MariaDB) server  
+- **Git**  
+
+Optional but recommended:  
+- **DBeaver** (or another MySQL GUI)  
+- **Docker & docker-compose** (for an easy MySQL container)
+
+---
+
+## Database Setup
+
+1. **Clone** the repo:
+   ```bash
+   git clone <your-repo-url>
+   cd social-media-analysis-db
+   ```
+
+2. **Create** the empty database & tables:
+   ```bash
+   mysql -u root -p < db/schema/create_tables.sql
+   ```
+
+3. **(Optional)** Load sample data:
+   ```bash
+   mysql -u root -p social_media < db/dumps/social_media_dump.sql
+   ```
+
+4. **Grant** your app user privileges (if you’re not using `root`):
+   ```sql
+   CREATE USER 'cs5330'@'localhost' IDENTIFIED BY 'your_password';
+   GRANT ALL PRIVILEGES ON social_media.* TO 'cs5330'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+
+---
+
+## Configuration
+
+1. Copy the template:
+   ```bash
+   cp app/db_config.py.template app/db_config.py
+   ```
+2. Edit `app/db_config.py` and fill in your:
+   ```python
+   DB_CONFIG = {
+     "host":     "localhost",
+     "user":     "cs5330",
+     "password": "your_password",
+     "database": "social_media",
+     "port":     3306
+   }
+   ```
+
+---
+
+## Install & Run
+
+1. **Install** dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. **Launch** the Flask app:
+   ```bash
+   python app.py
+   ```
+3. **Open** your browser at <http://127.0.0.1:5000>  
+   The home page will redirect to **/media**; use the nav bar to explore all screens.
+
+---
+
+## Running Tests
+
+```bash
+pytest -q
+```
+
+This runs unit tests against the CRUD functions to ensure your database operations work.
+
+---
+
+## Our Plan of Action
+
+We’re working in four sprints, each with clear roles:
+
+| Sprint | Focus                                   | Deliverables                                        |
+|--------|-----------------------------------------|-----------------------------------------------------|
+| 0      | Kickoff & Environment                   | ER model, schema SQL, repo setup, CI basics         |
+| 1      | Core DB & CRUD                          | DDL scripts, `db.py`, CRUD functions, unit tests    |
+| 2      | Web UI & Queries                        | Flask routes, Jinja templates, advanced search      |
+| 3      | Integration, Testing & Documentation    | E2E QA, final report (ER diagram, schema, screenshots) |
+
+### Team Roles
+
+- **DB Lead**: finalize schema & seed data, write complex SQL  
+- **Backend Lead**: build Python DB connector, CRUD & query functions  
+- **UI Lead**: scaffold Flask views, Jinja templates & navigation  
+
+---
+
+## Contributing
+
+- **Branch naming**: `feature/<area>` (e.g. `feature/crud-post`)  
+- **Commit style**: imperative, e.g.  
+  - `feat(crud): add find_posts() for advanced querying`  
+  - `feat(ui): convert media.html to extend base.html`  
+  - `fix(posts): validate timestamp format`  
+
+Open a **Pull Request** for each feature, request a review, and merge into `develop` → `main`.
+
+---
+
+Happy coding! 🚀  
