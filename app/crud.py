@@ -324,3 +324,9 @@ def get_project_posts(project_name=""):
     Return all ProjectPost rows, optionally filtered by project_name.
     """
     return get_project_post(project_name)
+
+def get_post_analyses(project_name=""):
+    """
+    Return all PostAnalysis rows, optionally filtered by project_name.
+    """
+    return get_post_analysis(project_name)
