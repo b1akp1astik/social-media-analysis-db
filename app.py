@@ -1,6 +1,6 @@
 # app.py
 from flask import Flask, request, redirect, render_template, url_for
-from app.crud import add_media, get_media, add_user, get_users
+from app.crud import add_media, get_media, add_user, get_user
 
 app = Flask(__name__)
 
@@ -20,22 +20,21 @@ def media():
 def home():
     return redirect("/media")
 
-if __name__ == "__main__":
-    app.run(debug=True)
+from app.crud import get_user as get_users  # alias existing get_user
 
 @app.route("/users", methods=["GET", "POST"])
 def users():
     if request.method == "POST":
-        # pull form values
-        media   = request.form["media"]
-        user    = request.form["username"]
-        first   = request.form["first_name"]
-        last    = request.form["last_name"]
-        # optional fields left out for now…
-        add_user(media, user, first, last)
-        return redirect(url_for("users"))
+        media    = request.form["media"].strip()
+        username = request.form["username"].strip()
+        first    = request.form["first_name"].strip()
+        last     = request.form["last_name"].strip()
+        add_user(media, username, first, last)
+        return redirect(f"/users?media={media}")
 
-    # on GET, fetch and display
-    media = request.args.get("media", "") 
-    users = get_users(media)  # list of dicts with FirstName, LastName, etc.
+    media = request.args.get("media", "")
+    users = get_users(media)
     return render_template("user.html", users=users, media=media)
+
+if __name__ == "__main__":
+    app.run(debug=True)

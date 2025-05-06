@@ -1,0 +1,37 @@
+<!-- templates/user.html -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Users</title>
+  </head>
+  <body>
+    <h1>Users for Media: {{ media or "(all)" }}</h1>
+
+    <form method="post">
+      <label>Media:</label>
+      <input name="media" value="{{ media }}" required>
+      <label>Username:</label>
+      <input name="username" required>
+      <label>First Name:</label>
+      <input name="first_name" required>
+      <label>Last Name:</label>
+      <input name="last_name" required>
+      <button type="submit">Add User</button>
+    </form>
+
+    <h2>Existing Users</h2>
+    <ul>
+      {% for u in users %}
+        <li>
+          {{ u.MediaName }} - {{ u.Username }} :
+          {{ u.FirstName }} {{ u.LastName }}
+        </li>
+      {% else %}
+        <li><em>-- no users yet --</em></li>
+      {% endfor %}
+    </ul>
+
+    <p><a href="/media">← back to Media</a></p>
+  </body>
+</html>
