@@ -156,6 +156,28 @@ def fields():
         error=error
     )
 
+from app.crud import add_project_post, get_project_posts
+
+@app.route("/project-posts", methods=["GET", "POST"])
+def project_posts():
+    if request.method == "POST":
+        proj      = request.form["project"].strip()
+        media     = request.form["media"].strip()
+        username  = request.form["username"].strip()
+        time_post = request.form["time_posted"].strip()
+
+        # Optionally validate time format here…
+        add_project_post(proj, media, username, time_post)
+        return redirect(f"/project-posts?project={proj}")
+
+    proj   = request.args.get("project", "")
+    links  = get_project_posts(proj)
+    return render_template(
+        "project_posts.html",
+        project=proj,
+        links=links
+    )
+
 
 if __name__ == "__main__":
     app.run(debug=True)
