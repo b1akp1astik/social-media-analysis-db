@@ -304,3 +304,6 @@ def get_institutes():
     """Return all rows from Institute."""
     return run_query("SELECT * FROM Institute", fetch=True)
 
+def get_projects():
+    """Return all rows from Project."""
+    return run_query("SELECT * FROM Project", fetch=True)
