@@ -1,6 +1,11 @@
 # app/crud.py
 from app.db import run_query
 
+def get_media():
+    """Return all rows from SocialMedia."""
+    return run_query("SELECT * FROM SocialMedia", fetch=True)
+
+
 def add_media(media_name):
     return run_query("INSERT INTO SocialMedia (MediaName) VALUES (%s)",
                      (media_name,))
