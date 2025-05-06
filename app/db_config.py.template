@@ -1,0 +1,10 @@
+# app/db_config.py.template
+
+# Copy this file to db_config.py and update the values below
+DB_CONFIG = {
+    "host":     "localhost",       # e.g. "127.0.0.1"
+    "user":     "your_username",   # e.g. "cs5330"
+    "password": "your_password",   # e.g. "s3cret"
+    "database": "social_media",    # must match the database you created
+    "port":     3306               # default MySQL port
+}
