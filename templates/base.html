@@ -6,6 +6,22 @@
     <title>{% block title %}Social-Media DB{% endblock %}</title>
   </head>
   <body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for category, msg in messages %}
+        <li class="flash-{{ category }}">{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<style>
+  .flash-success { color: green; }
+  .flash-warning { color: orange; }
+  .flash-danger  { color: red; }
+</style>
+
     <nav>
       <a href="/media">Media</a> |
       <a href="/users">Users</a> |

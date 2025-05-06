@@ -1,20 +1,57 @@
 # app.py
-from flask import Flask, request, redirect, render_template, url_for
-from app.crud import add_media, get_media, add_user, get_user, run_query
+from flask import Flask, request, redirect, render_template, url_for, flash, get_flashed_messages
+from app.crud import add_media, get_media, add_user, get_user, run_query, update_media, delete_media
 
 app = Flask(__name__)
+app.secret_key = "replace_with_a_random_secret"        # needed for flash()
 
 @app.route("/media", methods=["GET", "POST"])
 def media():
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        if name:
-            add_media(name)
-        return redirect("/media")
+        name = request.form.get("name","").strip()
+        if not name:
+            flash("Name cannot be blank.", "danger")
+        else:
+            try:
+                add_media(name)
+            except Exception as e:
+                # you might catch a specific DuplicateKeyError instead
+                flash(f"Could not add “{name}”: it may already exist.", "warning")
+            else:
+                flash(f"Added media “{name}”!", "success")
+        return redirect(url_for("media"))
 
     # GET: show form + list
     medias = get_media()
     return render_template("media.html", medias=medias)
+
+@app.route("/media/edit/<old_name>", methods=["GET","POST"])
+def media_edit(old_name):
+    if request.method == "POST":
+        new_name = request.form.get("name","").strip()
+        if not new_name:
+            flash("Name cannot be blank.", "danger")
+        else:
+            try:
+                update_media(old_name, new_name)
+            except Exception:
+                flash(f"Failed to rename “{old_name}” to “{new_name}”.", "warning")
+            else:
+                flash(f"Renamed “{old_name}” → “{new_name}”.", "success")
+        return redirect(url_for("media"))
+
+    # GET: show single‐field form pre‐filled
+    return render_template("media_edit.html", old_name=old_name)
+  
+@app.route("/media/delete/<name>", methods=["POST"])
+def media_delete(name):
+    try:
+        delete_media(name)
+    except Exception:
+        flash(f"Could not delete “{name}”.", "warning")
+    else:
+        flash(f"Deleted media “{name}”.", "success")
+    return redirect(url_for("media"))
 
 @app.route("/")
 def home():

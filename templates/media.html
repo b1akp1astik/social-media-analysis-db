@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Media{% endblock %}
-
 {% block content %}
   <h1>Social Media Platforms</h1>
 
@@ -12,7 +11,15 @@
   <h2>Existing</h2>
   <ul>
     {% for m in medias %}
-      <li>{{ m.MediaName }}</li>
+      <li>
+        {{ m.MediaName }}
+        [<a href="{{ url_for('media_edit', old_name=m.MediaName) }}">Edit</a>]
+        <form action="{{ url_for('media_delete', name=m.MediaName) }}"
+              method="post" style="display:inline"
+              onsubmit="return confirm('Delete {{m.MediaName}}?');">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
     {% else %}
       <li><em>— no platforms yet —</em></li>
     {% endfor %}
