@@ -36,5 +36,26 @@ def users():
     users = get_users(media)
     return render_template("user.html", users=users, media=media)
 
+from app.crud import add_post, get_posts
+
+@app.route("/posts", methods=["GET", "POST"])
+def posts():
+    if request.method == "POST":
+        media    = request.form["media"].strip()
+        username = request.form["username"].strip()
+        time     = request.form["time"].strip()
+        text     = request.form["text"].strip()
+        add_post(media, username, time, text)
+        return redirect(f"/posts?media={media}&username={username}")
+
+    media    = request.args.get("media", "")
+    username = request.args.get("username", "")
+    posts    = get_posts(media, username)
+    return render_template("posts.html",
+                           posts=posts,
+                           media=media,
+                           username=username)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
