@@ -318,3 +318,9 @@ def get_fields(project_name=""):
         sql += " WHERE ProjectName=%s"
         params.append(project_name)
     return run_query(sql, params, fetch=True)
+
+def get_project_posts(project_name=""):
+    """
+    Return all ProjectPost rows, optionally filtered by project_name.
+    """
+    return get_project_post(project_name)
