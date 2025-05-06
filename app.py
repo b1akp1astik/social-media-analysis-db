@@ -132,6 +132,30 @@ def projects():
     projs = get_projects()
     return render_template("projects.html", projects=projs)
 
+from app.crud import add_field, get_fields
+
+@app.route("/fields", methods=["GET", "POST"])
+def fields():
+    error = None
+    if request.method == "POST":
+        proj  = request.form["project"].strip()
+        fname = request.form["field_name"].strip()
+        if not proj or not fname:
+            error = "Both Project and Field name are required."
+        else:
+            add_field(proj, fname)
+            return redirect(f"/fields?project={proj}")
+
+    # on GET or POST-with-error:
+    proj   = request.args.get("project", "")
+    fields = get_fields(proj)
+    return render_template(
+        "fields.html",
+        fields=fields,
+        project=proj,
+        error=error
+    )
+
 
 if __name__ == "__main__":
     app.run(debug=True)
