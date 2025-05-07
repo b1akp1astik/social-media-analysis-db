@@ -204,8 +204,13 @@ def users():
 
         return redirect(url_for("users", media=media))
 
-    # GET: render
-    users = get_users(media) if media else []
+    # GET: fetch and render
+    if media:
+        users = get_users(media)
+    else:
+        # no filter → show every user
+        users = run_query("SELECT * FROM User", fetch=True)
+
     return render_template("user.html",
                            users=users,
                            media=media,
