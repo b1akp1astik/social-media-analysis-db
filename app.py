@@ -176,12 +176,16 @@ from flask import Flask, request, redirect, render_template, url_for, flash
 from mysql.connector import IntegrityError, errorcode
 from app.crud import add_post, get_posts
 
+from datetime import datetime
+from flask import flash, redirect, render_template, request, url_for
+from mysql.connector import IntegrityError, errorcode
+from app.crud import add_post, get_posts
+
 @app.route("/posts", methods=["GET", "POST"])
 def posts():
     # on each render
     media    = request.args.get("media", "").strip()
     username = request.args.get("username", "").strip()
-    error    = None
 
     if request.method == "POST":
         # 1) pull & strip inputs
@@ -215,17 +219,28 @@ def posts():
             flash("Media, username, time and text are all required.", "danger")
             return redirect(url_for("posts", media=media, username=username))
 
-        # 3) timestamp format
+        # 3) timestamp format: accept both with and without seconds
         try:
-            datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+            # first try full precision
+            dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
         except ValueError:
-            flash("Time must be YYYY-MM-DD HH:MM:SS.", "danger")
-            return redirect(url_for("posts", media=media, username=username))
+            try:
+                # try without seconds
+                dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+            except ValueError:
+                flash("Time must be in YYYY-MM-DD HH:MM[:SS] format.", "danger")
+                return redirect(url_for("posts", media=media, username=username))
+            else:
+                # add seconds = 0
+                dt = dt.replace(second=0)
+
+        # now normalize to full‐precision string
+        normalized_time = dt.strftime("%Y-%m-%d %H:%M:%S")
 
         # 4) insert
         try:
             add_post(
-                media, username, time_str, text,
+                media, username, normalized_time, text,
                 city, state, country,
                 likes, dislikes, has_multimedia
             )
@@ -240,7 +255,9 @@ def posts():
             flash("Unexpected error adding post.", "danger")
         else:
             flash("Post added successfully!", "success")
-            return redirect(url_for("posts", media=media, username=username))
+            return redirect(url_for("posts",
+                                    media=media,
+                                    username=username))
 
     # GET (or after a validation failure): show form + existing posts
     posts = get_posts(media, username)
@@ -255,6 +272,20 @@ from datetime import datetime
 from flask import flash, redirect, render_template, request, url_for
 from mysql.connector import IntegrityError, errorcode
 from app.crud import add_repost, get_reposts
+
+
+def _normalize_timestamp(ts: str, label: str) -> str:
+    """
+    Try parsing ts with seconds or without; return a string
+    formatted as 'YYYY-MM-DD HH:MM:SS', or raise ValueError.
+    """
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            dt = datetime.strptime(ts, fmt)
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    raise ValueError(f"{label} must be in YYYY-MM-DD HH:MM[:SS] format.")
 
 @app.route("/reposts", methods=["GET", "POST"])
 def reposts():
@@ -272,13 +303,13 @@ def reposts():
             flash("All repost fields are required.", "danger")
             return redirect(url_for("reposts", orig_media=orig_media))
 
-        # 3) validate timestamps
-        for label, ts in [("Original time", orig_time), ("Repost time", repost_time)]:
-            try:
-                datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
-            except ValueError:
-                flash(f"{label} must be in YYYY-MM-DD HH:MM:SS format.", "danger")
-                return redirect(url_for("reposts", orig_media=orig_media))
+        # 3) normalize timestamps (accept with or without seconds)
+        try:
+            orig_time   = _normalize_timestamp(orig_time, "Original time")
+            repost_time = _normalize_timestamp(repost_time, "Repost time")
+        except ValueError as e:
+            flash(str(e), "danger")
+            return redirect(url_for("reposts", orig_media=orig_media))
 
         # 4) attempt insert
         try:
