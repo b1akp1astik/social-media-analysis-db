@@ -148,10 +148,18 @@ def update_repost(orig_media, orig_user, orig_time, repost_time, **fields):
     sql = f"UPDATE Repost SET {', '.join(cols)} WHERE OrigMedia=%s AND OrigUser=%s AND OrigTime=%s AND RepostTime=%s"
     return run_query(sql, tuple(vals))
 
-def delete_repost(orig_media, orig_user, orig_time, repost_time):
+def delete_repost(orig_media, orig_user, orig_time, rep_media, rep_user, repost_time):
     return run_query(
-        "DELETE FROM Repost WHERE OrigMedia=%s AND OrigUser=%s AND OrigTime=%s AND RepostTime=%s",
-        (orig_media, orig_user, orig_time, repost_time)
+      """
+      DELETE FROM Repost
+       WHERE OrigMedia       = %s
+         AND OrigUser        = %s
+         AND OrigTime        = %s
+         AND ReposterMedia   = %s
+         AND ReposterUser    = %s
+         AND RepostTime      = %s
+      """,
+      (orig_media, orig_user, orig_time, rep_media, rep_user, repost_time)
     )
 
 # ------------------ Institute ------------------
