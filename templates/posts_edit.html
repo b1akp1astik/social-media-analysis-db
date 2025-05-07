@@ -1,0 +1,86 @@
+{# templates/posts_edit.html #}
+{% extends "base.html" %}
+{% block title %}Edit Post{% endblock %}
+
+{% block content %}
+  <h1>Edit Post</h1>
+
+  {# Flash messages #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for category, msg in messages %}
+          <li class="flash-{{ category }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <form method="post">
+    <fieldset>
+      <legend>Required</legend>
+
+      <label>Media:
+        <select name="media" disabled>
+          <option>{{ post.MediaName }}</option>
+        </select>
+      </label>
+
+      <label>Username:
+        <select name="username" disabled>
+          <option>{{ post.Username }}</option>
+        </select>
+      </label>
+
+      <label>Time (YYYY-MM-DD HH:MM[:SS]):
+        <input name="time" value="{{ post.TimePosted }}" required>
+      </label>
+
+      <label>Text:
+        <textarea name="text" rows="3" required>{{ post.TextContent }}</textarea>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Location (optional)</legend>
+      <label>City:
+        <input name="city" value="{{ post.City or '' }}" placeholder="e.g. Seattle">
+      </label>
+      <label>State:
+        <input name="state" value="{{ post.State or '' }}" placeholder="e.g. WA">
+      </label>
+      <label>Country:
+        <input name="country" value="{{ post.Country or '' }}" placeholder="e.g. USA">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Engagement (optional)</legend>
+      <label>Likes:
+        <input name="likes" type="number" min="0" value="{{ post.Likes }}" placeholder="0">
+      </label>
+      <label>Dislikes:
+        <input name="dislikes" type="number" min="0" value="{{ post.Dislikes }}" placeholder="0">
+      </label>
+      <label>
+        <input name="has_multimedia" type="checkbox"
+               {% if post.HasMultimedia %}checked{% endif %}>
+        Contains multimedia
+      </label>
+    </fieldset>
+
+    <p>
+      <button type="submit">Save Changes</button>
+      <a href="{{ url_for('posts', media=post.MediaName, username=post.Username) }}">Cancel</a>
+    </p>
+  </form>
+
+  <form method="post"
+        action="{{ url_for('post_delete',
+                           media=post.MediaName,
+                           username=post.Username,
+                           time_posted=post.TimePosted) }}"
+        onsubmit="return confirm('Really delete this post?');">
+    <button type="submit">Delete Post</button>
+  </form>
+{% endblock %}

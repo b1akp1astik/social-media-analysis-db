@@ -1,7 +1,40 @@
 # app.py
-from flask import Flask, request, redirect, render_template, url_for, flash, get_flashed_messages
-from app.crud import add_media, get_media, add_user, get_user, run_query, update_media, delete_media
+from flask import (
+    Flask,
+    request,
+    redirect,
+    render_template,
+    url_for,
+    flash,
+    get_flashed_messages
+)
 from mysql.connector import IntegrityError, errorcode
+from datetime import datetime
+
+from app.crud import (
+    # Media
+    add_media, get_media, update_media, delete_media,
+    # Users
+    add_user, get_user as get_users, update_user, delete_user,
+    # Posts
+    add_post, get_posts, update_post, delete_post,
+    # Reposts
+    add_repost, get_reposts, update_repost, delete_repost,
+    # Institutes
+    add_institute, get_institutes, update_institute, delete_institute,
+    # Projects
+    add_project, get_projects, update_project, delete_project,
+    # Fields
+    add_field, get_fields, update_field, delete_field,
+    # Project ↔ Post links
+    add_project_post, get_project_posts, update_project_post, delete_project_post,
+    # Analyses
+    add_post_analysis, get_post_analyses, update_post_analysis, delete_post_analysis,
+    # Searches
+    find_posts, get_experiment_results,
+    # Misc
+    run_query
+)
 
 app = Flask(__name__)
 app.secret_key = "replace_with_a_random_secret"        # needed for flash()
@@ -101,21 +134,28 @@ def media_delete(name):
 def home():
     return redirect("/media")
 
-from app.crud import get_user as get_users  # alias existing get_user
-
-@app.route("/users", methods=["GET","POST"])
+# ——— List & Create Users ———
+@app.route("/users", methods=["GET", "POST"])
 def users():
+    # always load the full list of media platforms for the dropdown
+    all_medias = [row["MediaName"] for row in get_media()]
+
+    # which media are we currently filtering by?
+    media = request.args.get("media", "").strip()
+
     if request.method == "POST":
-        media    = request.form.get("media","").strip()
-        username = request.form.get("username","").strip()
-        first    = request.form.get("first_name","").strip()
-        last     = request.form.get("last_name","").strip()
-        # optional fields:
+        # pull & strip inputs
+        media    = request.form.get("media", "").strip()
+        username = request.form.get("username", "").strip()
+        first    = request.form.get("first_name", "").strip() or None
+        last     = request.form.get("last_name", "").strip() or None
+
+        # optional fields
         country_birth = request.form.get("country_birth") or None
         country_res   = request.form.get("country_res")   or None
 
-        # AGE: must be integer ≥0 (or blank)
-        age_raw = request.form.get("age","").strip()
+        # age must be a non-negative integer if provided
+        age_raw = request.form.get("age", "").strip()
         if age_raw:
             try:
                 age = int(age_raw)
@@ -127,34 +167,32 @@ def users():
         else:
             age = None
 
-        # GENDER: if provided, must be one of your ENUM choices
-        gender = request.form.get("gender","").strip() or None
-        if gender and gender not in ("Male","Female","Other"):
+        # gender must be one of your ENUMs
+        gender = request.form.get("gender", "").strip() or None
+        if gender and gender not in ("Male", "Female", "Other"):
             flash("Gender must be Male, Female, or Other.", "danger")
             return redirect(url_for("users", media=media))
 
-        # VERIFIED checkbox
         is_verified = bool(request.form.get("is_verified"))
 
-        # 1) Required inputs
-        if not all([media, username]):
-            flash("Media, username are required.", "danger")
+        # required: media & username
+        if not media or not username:
+            flash("Media and username are required.", "danger")
             return redirect(url_for("users", media=media))
 
-        # 2) username length
+        # username length
         if len(username) > 40:
             flash("Username must be 40 characters or fewer.", "danger")
             return redirect(url_for("users", media=media))
 
-        # 3) now try to insert
+        # attempt insert
         try:
             add_user(media, username, first, last,
                      country_birth, country_res,
                      age, gender, is_verified)
         except IntegrityError as e:
-            # inspect e.errno for more granular messages
             if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
-                flash(f"Cannot add user: platform “{media}” does not exist.", "warning")
+                flash(f"Platform “{media}” does not exist.", "warning")
             elif e.errno == errorcode.ER_DUP_ENTRY:
                 flash(f"Username “{username}” already taken on {media}.", "warning")
             else:
@@ -166,113 +204,167 @@ def users():
 
         return redirect(url_for("users", media=media))
 
-    # GET: list users (optionally filtered)
-    media = request.args.get("media","").strip()
+    # GET: render
     users = get_users(media) if media else []
-    return render_template("user.html", users=users, media=media)
+    return render_template("user.html",
+                           users=users,
+                           media=media,
+                           all_medias=all_medias)
 
-from datetime import datetime
-from flask import Flask, request, redirect, render_template, url_for, flash
-from mysql.connector import IntegrityError, errorcode
-from app.crud import add_post, get_posts
 
-from datetime import datetime
-from flask import flash, redirect, render_template, request, url_for
-from mysql.connector import IntegrityError, errorcode
-from app.crud import add_post, get_posts
+# ——— Edit User ———
+@app.route("/users/edit/<media>/<username>", methods=["GET", "POST"])
+def user_edit(media, username):
+    # load the record for GET
+    existing = get_users(media, username)
+    user = existing[0] if existing else {}
+
+    # pull new values on POST
+    new_first        = request.form.get("first_name", "").strip() or None
+    new_last         = request.form.get("last_name", "").strip() or None
+    new_country_birth = request.form.get("country_birth") or None
+    new_country_res   = request.form.get("country_res")   or None
+    age_raw           = request.form.get("age", "").strip()
+    gender            = request.form.get("gender", "").strip() or None
+    is_verified       = bool(request.form.get("is_verified"))
+
+    if request.method == "POST":
+        # validate age
+        if age_raw:
+            try:
+                new_age = int(age_raw)
+                if new_age < 0:
+                    raise ValueError
+            except ValueError:
+                flash("Age must be a non-negative integer.", "danger")
+                return redirect(url_for("user_edit", media=media, username=username))
+        else:
+            new_age = None
+
+        # validate gender
+        if gender and gender not in ("Male", "Female", "Other"):
+            flash("Gender must be Male, Female, or Other.", "danger")
+            return redirect(url_for("user_edit", media=media, username=username))
+
+        # attempt update
+        try:
+            update_user(
+                media, username,
+                FirstName=new_first,
+                LastName=new_last,
+                CountryOfBirth=new_country_birth,
+                CountryOfResidence=new_country_res,
+                Age=new_age,
+                Gender=gender,
+                IsVerified=is_verified
+            )
+        except IntegrityError as e:
+            if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
+                flash(f"Platform “{media}” does not exist.", "warning")
+            else:
+                flash("Database integrity error when updating user.", "danger")
+        except Exception:
+            flash("Unexpected error updating user.", "danger")
+        else:
+            flash(f"Updated user {username}@{media}.", "success")
+            return redirect(url_for("users", media=media))
+
+    return render_template("user_edit.html",
+                           media=media,
+                           user=user)
+
+
+# ——— Delete User ———
+@app.route("/users/delete/<media>/<username>", methods=["POST"])
+def user_delete(media, username):
+    try:
+        delete_user(media, username)
+    except IntegrityError as e:
+        if e.errno in (errorcode.ER_ROW_IS_REFERENCED_2, errorcode.ER_ROW_IS_REFERENCED):
+            flash("Cannot delete user: related posts or reposts exist.", "warning")
+        else:
+            flash("Database integrity error when deleting user.", "danger")
+    except Exception:
+        flash("Unexpected error deleting user.", "danger")
+    else:
+        flash(f"Deleted user {username}@{media}.", "success")
+    return redirect(url_for("users", media=media))
 
 @app.route("/posts", methods=["GET", "POST"])
 def posts():
-    # on each render
-    media    = request.args.get("media", "").strip()
-    username = request.args.get("username", "").strip()
+    # For filter dropdowns
+    all_medias = [m["MediaName"] for m in get_media()]
+    media      = request.args.get("media", "").strip()
+    all_users  = get_users(media) if media else []
+    username   = request.args.get("username", "").strip()
 
-    if request.method == "POST":
-        # 1) pull & strip inputs
+    if request.method=="POST":
+        # Pull & strip inputs
         media      = request.form.get("media","").strip()
         username   = request.form.get("username","").strip()
         time_str   = request.form.get("time","").strip()
         text       = request.form.get("text","").strip()
-
-        # optional metadata
         city       = request.form.get("city") or None
         state      = request.form.get("state") or None
         country    = request.form.get("country") or None
 
-        # likes/dislikes must be integers ≥ 0
-        likes_raw    = request.form.get("likes","").strip()
-        dislikes_raw = request.form.get("dislikes","").strip()
+        # Validate engagement
         try:
-            likes    = int(likes_raw)    if likes_raw    else 0
-            dislikes = int(dislikes_raw) if dislikes_raw else 0
-            if likes < 0 or dislikes < 0:
+            likes    = int(request.form.get("likes","")   or 0)
+            dislikes = int(request.form.get("dislikes","") or 0)
+            if likes<0 or dislikes<0:
                 raise ValueError
         except ValueError:
             flash("Likes/dislikes must be non-negative integers.", "danger")
             return redirect(url_for("posts", media=media, username=username))
 
-        # multimedia flag
         has_multimedia = bool(request.form.get("has_multimedia"))
 
-        # 2) required fields
+        # Required fields
         if not all([media, username, time_str, text]):
-            flash("Media, username, time and text are all required.", "danger")
+            flash("Media, username, time and text are required.", "danger")
             return redirect(url_for("posts", media=media, username=username))
 
-        # 3) timestamp format: accept both with and without seconds
+        # Parse timestamp (with or without seconds)
         try:
-            # first try full precision
             dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
         except ValueError:
             try:
-                # try without seconds
                 dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
-            except ValueError:
-                flash("Time must be in YYYY-MM-DD HH:MM[:SS] format.", "danger")
-                return redirect(url_for("posts", media=media, username=username))
-            else:
-                # add seconds = 0
                 dt = dt.replace(second=0)
-
-        # now normalize to full‐precision string
+            except ValueError:
+                flash("Time must be YYYY-MM-DD HH:MM[:SS].", "danger")
+                return redirect(url_for("posts", media=media, username=username))
         normalized_time = dt.strftime("%Y-%m-%d %H:%M:%S")
 
-        # 4) insert
+        # Insert
         try:
-            add_post(
-                media, username, normalized_time, text,
-                city, state, country,
-                likes, dislikes, has_multimedia
-            )
+            add_post(media, username, normalized_time, text,
+                     city, state, country,
+                     likes, dislikes, has_multimedia)
         except IntegrityError as e:
             if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
                 flash("Cannot add post: user or media does not exist.", "warning")
             elif e.errno == errorcode.ER_DUP_ENTRY:
-                flash("This post (same user, media, and timestamp) already exists.", "warning")
+                flash("This post already exists.", "warning")
             else:
                 flash("Database integrity error adding post.", "danger")
         except Exception:
             flash("Unexpected error adding post.", "danger")
         else:
             flash("Post added successfully!", "success")
-            return redirect(url_for("posts",
-                                    media=media,
-                                    username=username))
+            return redirect(url_for("posts", media=media, username=username))
 
-    # GET (or after a validation failure): show form + existing posts
-    posts = get_posts(media, username)
+    # GET: fetch and render
+    posts = get_posts(media or None, username or None)
     return render_template(
         "posts.html",
+        all_medias=all_medias,
+        all_users=all_users,
         posts=posts,
         media=media,
         username=username
     )
-
-from datetime import datetime
-from flask import flash, redirect, render_template, request, url_for
-from mysql.connector import IntegrityError, errorcode
-from app.crud import add_repost, get_reposts
-
 
 def _normalize_timestamp(ts: str, label: str) -> str:
     """
@@ -287,60 +379,246 @@ def _normalize_timestamp(ts: str, label: str) -> str:
             continue
     raise ValueError(f"{label} must be in YYYY-MM-DD HH:MM[:SS] format.")
 
-@app.route("/reposts", methods=["GET", "POST"])
-def reposts():
+@app.route("/posts/edit/<media>/<username>/<path:time_posted>", methods=["GET", "POST"])
+def post_edit(media, username, time_posted):
+    # 1) normalize the incoming URL component
+    try:
+        norm_key = _normalize_timestamp(time_posted, "TimePosted")
+    except ValueError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("posts", media=media, username=username))
+
+    # 2) fetch all posts for this user/media and find the one matching our key
+    rows = get_posts(media, username)
+    post = None
+    for p in rows:
+        # p["TimePosted"] might be a datetime; convert to string
+        ts = p["TimePosted"]
+        # if it's not already a string, format it
+        if not isinstance(ts, str):
+            ts = ts.strftime("%Y-%m-%d %H:%M:%S")
+        if ts == norm_key:
+            post = p
+            break
+
+    if not post:
+        flash("Post not found.", "warning")
+        return redirect(url_for("posts", media=media, username=username))
+
     if request.method == "POST":
-        # 1) pull & strip inputs
-        orig_media  = request.form.get("orig_media","").strip()
-        orig_user   = request.form.get("orig_user","").strip()
-        orig_time   = request.form.get("orig_time","").strip()
-        rep_media   = request.form.get("rep_media","").strip()
-        rep_user    = request.form.get("rep_user","").strip()
-        repost_time = request.form.get("repost_time","").strip()
+        # pull & normalize again for updates
+        raw_time = request.form.get("time", "").strip()
+        text     = request.form.get("text", "").strip()
+        city     = request.form.get("city") or None
+        state    = request.form.get("state") or None
+        country  = request.form.get("country") or None
 
-        # 2) required fields
-        if not all([orig_media, orig_user, orig_time, rep_media, rep_user, repost_time]):
-            flash("All repost fields are required.", "danger")
-            return redirect(url_for("reposts", orig_media=orig_media))
-
-        # 3) normalize timestamps (accept with or without seconds)
+        # validate likes/dislikes
+        likes_raw    = request.form.get("likes", "").strip()
+        dislikes_raw = request.form.get("dislikes", "").strip()
         try:
-            orig_time   = _normalize_timestamp(orig_time, "Original time")
-            repost_time = _normalize_timestamp(repost_time, "Repost time")
+            likes    = int(likes_raw)    if likes_raw    else 0
+            dislikes = int(dislikes_raw) if dislikes_raw else 0
+            if likes < 0 or dislikes < 0:
+                raise ValueError
+        except ValueError:
+            flash("Likes/dislikes must be non-negative integers.", "danger")
+            return redirect(url_for("post_edit",
+                                    media=media,
+                                    username=username,
+                                    time_posted=time_posted))
+
+        has_multimedia = bool(request.form.get("has_multimedia"))
+
+        if not all([raw_time, text]):
+            flash("Time and text are required.", "danger")
+            return redirect(url_for("post_edit",
+                                    media=media,
+                                    username=username,
+                                    time_posted=time_posted))
+
+        try:
+            normalized_time = _normalize_timestamp(raw_time, "Time")
         except ValueError as e:
             flash(str(e), "danger")
-            return redirect(url_for("reposts", orig_media=orig_media))
+            return redirect(url_for("post_edit",
+                                    media=media,
+                                    username=username,
+                                    time_posted=time_posted))
 
-        # 4) attempt insert
+        # attempt update (note: updating TimePosted will change the PK)
         try:
-            add_repost(orig_media, orig_user, orig_time,
-                       rep_media, rep_user, repost_time)
+            update_post(
+                media, username, norm_key,
+                TimePosted=normalized_time,
+                TextContent=text,
+                City=city,
+                State=state,
+                Country=country,
+                Likes=likes,
+                Dislikes=dislikes,
+                HasMultimedia=has_multimedia
+            )
         except IntegrityError as e:
             if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
-                flash("Cannot add repost: original post or user/media not found.", "warning")
+                flash("Cannot update post: user or media doesn’t exist.", "warning")
+            elif e.errno == errorcode.ER_DUP_ENTRY:
+                flash("Another post already exists at that timestamp.", "warning")
+            else:
+                flash("Database integrity error updating post.", "danger")
+        except Exception:
+            flash("Unexpected error updating post.", "danger")
+        else:
+            flash("Post updated successfully!", "success")
+            return redirect(url_for("posts",
+                                    media=media,
+                                    username=username))
+
+    # on GET (or if validation failed), render the form with the post’s current values
+    return render_template("posts_edit.html", post=post)
+
+# ——— Delete Post ———
+@app.route("/posts/delete/<media>/<username>/<time_posted>", methods=["POST"])
+def post_delete(media, username, time_posted):
+    try:
+        delete_post(media, username, time_posted)
+    except IntegrityError as e:
+        if e.errno in (errorcode.ER_ROW_IS_REFERENCED_2, errorcode.ER_ROW_IS_REFERENCED):
+            flash("Cannot delete: related records exist.", "warning")
+        else:
+            flash("Database integrity error when deleting post.", "danger")
+    except Exception:
+        flash("Unexpected error deleting post.", "danger")
+    else:
+        flash("Post deleted.", "success")
+    return redirect(url_for("posts", media=media, username=username))
+
+def _normalize_timestamp(ts: str, label: str) -> str:
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            return datetime.strptime(ts, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    raise ValueError(f"{label} must be in YYYY-MM-DD HH:MM[:SS] format.")
+
+# ——— List & Create Reposts ———
+@app.route("/reposts", methods=["GET", "POST"])
+def reposts():
+    all_medias = [m["MediaName"] for m in get_media()]
+    orig_media = request.args.get("orig_media", "").strip()
+
+    if request.method == "POST":
+        om, ou, ot, rm, ru, rt = (
+            request.form.get(f, "").strip()
+            for f in ("orig_media","orig_user","orig_time",
+                      "rep_media","rep_user","repost_time")
+        )
+
+        if not all([om, ou, ot, rm, ru, rt]):
+            flash("All repost fields are required.", "danger")
+            return redirect(url_for("reposts", orig_media=om))
+
+        try:
+            ot = _normalize_timestamp(ot, "Original time")
+            rt = _normalize_timestamp(rt, "Repost time")
+        except ValueError as e:
+            flash(str(e), "danger")
+            return redirect(url_for("reposts", orig_media=om))
+
+        try:
+            add_repost(om, ou, ot, rm, ru, rt)
+        except IntegrityError as e:
+            if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
+                flash("Original post or user/media not found.", "warning")
             elif e.errno == errorcode.ER_DUP_ENTRY:
                 flash("This repost already exists.", "warning")
             else:
                 flash("Database integrity error adding repost.", "danger")
-        except Exception:
-            flash("Unexpected error adding repost.", "danger")
         else:
             flash("Repost recorded successfully!", "success")
-            return redirect(url_for("reposts", orig_media=orig_media))
+            return redirect(url_for("reposts", orig_media=om))
 
-    # GET (or after failure): show list & form
-    orig_media = request.args.get("orig_media", "").strip()
-    reposts    = get_reposts(orig_media or None)
+    reposts = get_reposts(orig_media or None)
     return render_template(
         "reposts.html",
+        all_medias=all_medias,
         reposts=reposts,
         orig_media=orig_media
     )
 
-from datetime import datetime
-from flask import flash, redirect, render_template, request, url_for
-from mysql.connector import IntegrityError, errorcode
-from app.crud import add_institute, get_institutes, add_project, get_projects
+
+# ——— Edit Repost ———
+@app.route(
+  "/reposts/edit/"
+  "<orig_media>/<orig_user>/<path:orig_time>/"
+  "<rep_media>/<rep_user>/<path:repost_time>",
+  methods=["GET","POST"]
+)
+def repost_edit(orig_media, orig_user, orig_time, rep_media, rep_user, repost_time):
+    rows = get_reposts(orig_media) or []
+    repost = next((
+        r for r in rows
+        if str(r["OrigMedia"])     == orig_media
+        and str(r["OrigUser"])     == orig_user
+        and str(r["OrigTime"])     == orig_time
+        and str(r["ReposterMedia"])== rep_media
+        and str(r["ReposterUser"]) == rep_user
+        and str(r["RepostTime"])   == repost_time
+    ), None)
+
+    if not repost:
+        flash("Repost not found.", "warning")
+        return redirect(url_for("reposts", orig_media=orig_media))
+
+    if request.method == "POST":
+        new_vals = {k: request.form.get(k, "").strip() for k in
+                    ("orig_media","orig_user","orig_time",
+                     "rep_media","rep_user","repost_time")}
+        if not all(new_vals.values()):
+            flash("All fields are required.", "danger")
+            return redirect(request.url)
+
+        try:
+            new_vals["orig_time"]  = _normalize_timestamp(new_vals["orig_time"],  "Original time")
+            new_vals["repost_time"]= _normalize_timestamp(new_vals["repost_time"],"Repost time")
+        except ValueError as e:
+            flash(str(e), "danger")
+            return redirect(request.url)
+
+        try:
+            update_repost(
+                orig_media, orig_user, orig_time, repost_time,
+                OrigMedia=new_vals["orig_media"],
+                OrigUser=new_vals["orig_user"],
+                OrigTime=new_vals["orig_time"],
+                ReposterMedia=new_vals["rep_media"],
+                ReposterUser=new_vals["rep_user"],
+                RepostTime=new_vals["repost_time"],
+            )
+        except IntegrityError:
+            flash("Database integrity error updating repost.", "danger")
+        else:
+            flash("Repost updated successfully!", "success")
+            return redirect(url_for("reposts", orig_media=new_vals["orig_media"]))
+
+    return render_template("repost_edit.html", repost=repost)
+
+
+# ——— Delete Repost ———
+@app.route(
+    "/reposts/delete/"
+    "<orig_media>/<orig_user>/<path:orig_time>/"
+    "<rep_media>/<rep_user>/<path:repost_time>",
+    methods=["POST"]
+)
+def repost_delete(orig_media, orig_user, orig_time, rep_media, rep_user, repost_time):
+    try:
+        delete_repost(orig_media, orig_user, orig_time, rep_media, rep_user, repost_time)
+    except IntegrityError:
+        flash("Cannot delete repost: related records exist.", "warning")
+    else:
+        flash("Repost deleted.", "success")
+    return redirect(url_for("reposts", orig_media=orig_media))
 
 @app.route("/institutes", methods=["GET", "POST"])
 def institutes():
@@ -421,10 +699,6 @@ def projects():
     # GET: show all projects
     projs = get_projects()
     return render_template("projects.html", projects=projs)
-from datetime import datetime
-from flask import flash, redirect, render_template, request, url_for
-from mysql.connector import IntegrityError, errorcode
-from app.crud import add_field, get_fields, add_project_post, get_project_posts
 
 @app.route("/fields", methods=["GET", "POST"])
 def fields():
@@ -510,11 +784,6 @@ def project_posts():
         links=links
     )
 
-from datetime import datetime
-from flask import flash, redirect, render_template, request, url_for
-from mysql.connector import IntegrityError, errorcode
-from app.crud import add_post_analysis, get_post_analyses
-
 @app.route("/analyses", methods=["GET", "POST"])
 def analyses():
     if request.method == "POST":
@@ -562,10 +831,6 @@ def analyses():
         analyses=results,
         project=proj
     )
-from datetime import datetime
-from flask import flash, redirect, render_template, request, url_for
-from mysql.connector import IntegrityError, errorcode
-from app.crud import find_posts, get_project_posts, get_experiment_results, get_fields
 
 @app.route("/search-posts", methods=["GET", "POST"])
 def search_posts():

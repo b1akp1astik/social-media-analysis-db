@@ -2,36 +2,74 @@
 {% block title %}Reposts{% endblock %}
 
 {% block content %}
-  <h1>Reposts</h1>
+  <h1>Reposts of Original Media: {{ orig_media or "(all)" }}</h1>
 
+  <form method="get" action="{{ url_for('reposts') }}">
+    <label>Filter by original media:</label>
+    <select name="orig_media">
+      <option value="">— all —</option>
+      {% for m in all_medias %}
+        <option value="{{ m }}" {% if m==orig_media %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Go</button>
+  </form>
+
+  <hr>
+
+  <h2>Record a Repost</h2>
   <form method="post">
-    <fieldset>
-      <legend>Original Post</legend>
-      <label>Media:     <input name="orig_media"  value="{{ orig_media }}"></label>
-      <label>User:      <input name="orig_user"   ></label>
-      <label>TimePosted:<input name="orig_time"   placeholder="YYYY-MM-DD HH:MM[:SS]"></label>
-    </fieldset>
-    <fieldset>
-      <legend>Reposter</legend>
-      <label>Media:     <input name="rep_media"   ></label>
-      <label>User:      <input name="rep_user"    ></label>
-      <label>RepostTime:<input name="repost_time" placeholder="YYYY-MM-DD HH:MM[:SS]"></label>
-    </fieldset>
+    <label>Orig Media:   <input name="orig_media"   value="{{ orig_media }}" required></label>
+    <label>Orig User:    <input name="orig_user"    required></label>
+    <label>Orig Time:    <input name="orig_time"    placeholder="YYYY-MM-DD HH:MM[:SS]" required></label>
+    <label>Rep Media:    <input name="rep_media"    required></label>
+    <label>Rep User:     <input name="rep_user"     required></label>
+    <label>Repost Time:  <input name="repost_time"  placeholder="YYYY-MM-DD HH:MM[:SS]" required></label>
     <button type="submit">Add Repost</button>
   </form>
 
   <h2>Existing Reposts</h2>
-  <ul>
-    {% for r in reposts %}
-      <li>
-        Orig: [{{ r.OrigMedia }}/{{ r.OrigUser }} @ {{ r.OrigTime }}]
-        → 
-        Rep:  [{{ r.ReposterMedia }}/{{ r.ReposterUser }} @ {{ r.RepostTime }}]
-      </li>
-    {% else %}
-      <li><em>-- no reposts yet --</em></li>
-    {% endfor %}
-  </ul>
+  <table>
+    <thead>
+      <tr>
+        <th>Orig</th><th>Reposter</th><th>Repost Time</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reposts %}
+      <tr>
+        <td>{{ r.OrigMedia }}/{{ r.OrigUser }} @ {{ r.OrigTime }}</td>
+        <td>{{ r.ReposterMedia }}/{{ r.ReposterUser }}</td>
+        <td>{{ r.RepostTime }}</td>
+        <td>
+          <a href="{{ url_for('repost_edit',
+            orig_media=r.OrigMedia,
+            orig_user=r.OrigUser,
+            orig_time=r.OrigTime,
+            rep_media=r.ReposterMedia,
+            rep_user=r.ReposterUser,
+            repost_time=r.RepostTime
+          ) }}">Edit</a>
+          <form method="post"
+                action="{{ url_for('repost_delete',
+                  orig_media=r.OrigMedia,
+                  orig_user=r.OrigUser,
+                  orig_time=r.OrigTime,
+                  rep_media=r.ReposterMedia,
+                  rep_user=r.ReposterUser,
+                  repost_time=r.RepostTime
+                ) }}"
+                style="display:inline"
+          >
+            <button type="submit" onclick="return confirm('Delete this repost?')">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4"><em>— no reposts —</em></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-  <p><a href="/posts">← back to Posts</a></p>
+  <p><a href="{{ url_for('reposts', orig_media=orig_media) }}">← back to Reposts</a></p>
 {% endblock %}

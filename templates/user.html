@@ -4,6 +4,21 @@
 {% block content %}
   <h1>Users for Media: {{ media or "(all)" }}</h1>
 
+  {# GET‐form to switch/filter media #}
+  <form method="get" style="margin-bottom:1em;">
+    <label>
+      Filter by platform:
+      <select name="media">
+        <option value="" {% if not media %}selected{% endif %}>(all)</option>
+        {% for m in all_medias %}
+          <option value="{{ m }}" {% if media == m %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Show</button>
+  </form>
+
+  {# Flash messages #}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <ul class="flashes">
@@ -14,38 +29,53 @@
     {% endif %}
   {% endwith %}
 
+  {# Add‐User form #}
   <form method="post">
-    <!-- required -->
-    <label>Media:     <input name="media"       value="{{ media }}" required></label>
-    <label>Username:  <input name="username"    required></label>
-
-    <!-- truly optional -->
     <fieldset>
-      <legend>Names (optional)</legend>
-      <label>First Name: <input name="first_name" placeholder="e.g. Alice"></label>
-      <label>Last Name:  <input name="last_name"  placeholder="e.g. Smith"></label>
-    </fieldset>
+      <legend>Add a new user</legend>
 
-    <fieldset>
-      <legend>Demographics (optional)</legend>
-      <label>Country of Birth:    <input name="country_birth"    placeholder="e.g. Canada"></label>
-      <label>Country of Residence:<input name="country_residence" placeholder="e.g. USA"></label>
-      <label>Age:                 <input name="age" type="number" min="0" placeholder="e.g. 30"></label>
-      <label>Gender:
-        <select name="gender">
-          <option value="" selected>—</option>
-          <option>Male</option>
-          <option>Female</option>
-          <option>Other</option>
+      <label>
+        Media:
+        <select name="media" required>
+          <option value="">— select platform —</option>
+          {% for m in all_medias %}
+            <option value="{{ m }}" {% if media == m %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
         </select>
       </label>
-      <label>
-        <input name="is_verified" type="checkbox">
-        Verified user
-      </label>
-    </fieldset>
 
-    <button type="submit">Add User</button>
+      <label>
+        Username:
+        <input name="username" required>
+      </label>
+
+      <fieldset>
+        <legend>Names (optional)</legend>
+        <label>First Name: <input name="first_name" placeholder="e.g. Alice"></label>
+        <label>Last Name:  <input name="last_name"  placeholder="e.g. Smith"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Demographics (optional)</legend>
+        <label>Country of Birth:     <input name="country_birth"    placeholder="e.g. Canada"></label>
+        <label>Country of Residence: <input name="country_residence" placeholder="e.g. USA"></label>
+        <label>Age:                  <input name="age" type="number" min="0" placeholder="e.g. 30"></label>
+        <label>Gender:
+          <select name="gender">
+            <option value="" selected>—</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>
+          <input name="is_verified" type="checkbox">
+          Verified user
+        </label>
+      </fieldset>
+
+      <button type="submit">Add User</button>
+    </fieldset>
   </form>
 
   <h2>Existing Users</h2>
@@ -59,6 +89,19 @@
         {% if u.IsVerified %}
           <strong>(verified)</strong>
         {% endif %}
+
+        {# Edit link #}
+        <a href="{{ url_for('user_edit', media=u.MediaName, username=u.Username) }}">Edit</a>
+
+        {# Delete button #}
+        <form
+          method="post"
+          action="{{ url_for('user_delete', media=u.MediaName, username=u.Username) }}"
+          style="display:inline; margin-left:0.5em;"
+          onsubmit="return confirm('Delete user {{ u.Username }}@{{ u.MediaName }}?');"
+        >
+          <button type="submit">Delete</button>
+        </form>
       </li>
     {% else %}
       <li><em>-- no users yet --</em></li>

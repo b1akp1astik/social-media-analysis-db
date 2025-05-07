@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Edit Repost{% endblock %}
+
+{% block content %}
+  <h1>Edit Repost</h1>
+
+  <form method="post">
+    <label>Orig Media:
+      <input name="orig_media" value="{{ repost.OrigMedia }}" required>
+    </label>
+    <label>Orig User:
+      <input name="orig_user" value="{{ repost.OrigUser }}" required>
+    </label>
+    <label>Orig Time:
+      <input name="orig_time" value="{{ repost.OrigTime }}" required>
+    </label>
+    <label>Rep Media:
+      <input name="rep_media" value="{{ repost.ReposterMedia }}" required>
+    </label>
+    <label>Rep User:
+      <input name="rep_user" value="{{ repost.ReposterUser }}" required>
+    </label>
+    <label>Repost Time:
+      <input name="repost_time" value="{{ repost.RepostTime }}" required>
+    </label>
+    <button type="submit">Save Changes</button>
+    <a href="{{ url_for('reposts', orig_media=repost.OrigMedia) }}">Cancel</a>
+  </form>
+{% endblock %}
