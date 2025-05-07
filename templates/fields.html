@@ -20,6 +20,27 @@
   <ul>
     {% for f in fields %}
       <li>{{ f.ProjectName }} → {{ f.FieldName }}</li>
+            <tr>
+                <td>{{ f.ProjectName }}</td>
+                <td>{{ f.FieldName }}</td>
+                <td>
+                  <a href="{{ url_for('fields_edit',
+                      project=f.ProjectName,
+                      field_name=f.FieldName
+                  ) }}">Edit</a>
+                  <form method="post"
+                        action="{{ url_for('fields_delete',
+                          project=f.ProjectName,
+                          field_name=f.FieldName
+                        ) }}"
+                        style="display:inline"
+                  >
+                    <button type="submit"
+                            onclick="return confirm('Delete this field?')"
+                    >Delete</button>
+                  </form>
+                </td>
+              </tr>
     {% else %}
       <li><em>-- no fields yet --</em></li>
     {% endfor %}

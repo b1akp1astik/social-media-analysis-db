@@ -18,15 +18,29 @@
   <ul>
     {% for p in projects %}
       <li>
-        {{ p.ProjectName }} — 
+        {{ p.ProjectName }} —
         {{ p.ManagerFirstName }} {{ p.ManagerLastName }},
         {{ p.InstituteName }},
         {{ p.StartDate }} to {{ p.EndDate }}
+  
+        <!-- Edit link -->
+        <a href="{{ url_for('projects_edit', project_name=p.ProjectName) }}">Edit</a>
+  
+        <!-- Delete form -->
+        <form method="post"
+              action="{{ url_for('projects_delete', project_name=p.ProjectName) }}"
+              style="display:inline">
+          <button type="submit"
+                  onclick="return confirm('Delete project “{{ p.ProjectName }}”?')">
+            Delete
+          </button>
+        </form>
       </li>
     {% else %}
       <li><em>-- no projects yet --</em></li>
     {% endfor %}
   </ul>
+  
 
   <p><a href="/institutes">← back to Institutes</a></p>
 {% endblock %}

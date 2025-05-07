@@ -23,9 +23,9 @@ from app.crud import (
     # Institutes
     add_institute, get_institutes, update_institute, delete_institute,
     # Projects
-    add_project, get_projects, update_project, delete_project,
+    add_project, get_projects, update_project, delete_project, get_project,
     # Fields
-    add_field, get_fields, update_field, delete_field,
+    add_field, get_fields, update_field, delete_field, get_field,
     # Project ↔ Post links
     add_project_post, get_project_posts, update_project_post, delete_project_post,
     # Analyses
@@ -650,6 +650,56 @@ def institutes():
     return render_template("institutes.html", institutes=insts)
 
 
+# ——— Edit Institute ———
+@app.route("/institutes/edit/<old_name>", methods=["GET", "POST"])
+def institutes_edit(old_name):
+    new_name = request.form.get("name", "").strip()
+
+    if request.method == "POST":
+        # 1) Required & length
+        if not new_name:
+            flash("Institute name cannot be blank.", "danger")
+            return redirect(url_for("institutes_edit", old_name=old_name))
+        if len(new_name) > 100:
+            flash("Institute name must be 100 characters or fewer.", "danger")
+            return redirect(url_for("institutes_edit", old_name=old_name))
+
+        # 2) Attempt update
+        try:
+            update_institute(old_name, new_name)
+        except IntegrityError as e:
+            if e.errno == errorcode.ER_DUP_ENTRY:
+                flash(f"Cannot rename: “{new_name}” already exists.", "warning")
+            else:
+                flash("Database integrity error when renaming institute.", "danger")
+        except Exception:
+            flash("Unexpected error renaming institute.", "danger")
+        else:
+            flash(f"Renamed institute “{old_name}” → “{new_name}”.", "success")
+            return redirect(url_for("institutes"))
+
+    # GET (or POST fell through)
+    return render_template("institutes_edit.html", old_name=old_name)
+
+
+# ——— Delete Institute ———
+@app.route("/institutes/delete/<name>", methods=["POST"])
+def institutes_delete(name):
+    try:
+        delete_institute(name)
+    except IntegrityError as e:
+        # FK violation?
+        if e.errno in (errorcode.ER_ROW_IS_REFERENCED_2, errorcode.ER_ROW_IS_REFERENCED):
+            flash(f"Cannot delete institute “{name}”: other records depend on it.", "warning")
+        else:
+            flash("Database integrity error when deleting institute.", "danger")
+    except Exception:
+        flash("Unexpected error deleting institute.", "danger")
+    else:
+        flash(f"Deleted institute “{name}”.", "success")
+
+    return redirect(url_for("institutes"))
+
 @app.route("/projects", methods=["GET", "POST"])
 def projects():
     if request.method == "POST":
@@ -700,6 +750,84 @@ def projects():
     projs = get_projects()
     return render_template("projects.html", projects=projs)
 
+# ——— Edit Project ———
+@app.route("/projects/edit/<project_name>", methods=["GET", "POST"])
+def projects_edit(project_name):
+    # fetch existing to pre-fill (optional)
+    existing = get_project(project_name)
+    proj = existing[0] if existing else {}
+
+    if request.method == "POST":
+        # pull & strip
+        new_name   = request.form.get("name",      "").strip()
+        mgr_first  = request.form.get("mgr_first", "").strip()
+        mgr_last   = request.form.get("mgr_last",  "").strip()
+        inst       = request.form.get("institute", "").strip()
+        start_str  = request.form.get("start_date","").strip()
+        end_str    = request.form.get("end_date",  "").strip()
+
+        # 1) all required
+        if not all([new_name, mgr_first, mgr_last, inst, start_str, end_str]):
+            flash("All project fields are required.", "danger")
+            return redirect(url_for("projects_edit", project_name=project_name))
+
+        # 2) validate dates
+        try:
+            start = datetime.strptime(start_str, "%Y-%m-%d").date()
+            end   = datetime.strptime(end_str,   "%Y-%m-%d").date()
+        except ValueError:
+            flash("Dates must be YYYY-MM-DD.", "danger")
+            return redirect(url_for("projects_edit", project_name=project_name))
+
+        # 3) logical check
+        if end < start:
+            flash("End date cannot be before start date.", "warning")
+            return redirect(url_for("projects_edit", project_name=project_name))
+
+        # 4) attempt update (note: if you allow renaming the PK you pass old name)
+        try:
+            update_project(
+                project_name,
+                ProjectName=new_name,
+                ManagerFirstName=mgr_first,
+                ManagerLastName=mgr_last,
+                InstituteName=inst,
+                StartDate=start_str,
+                EndDate=end_str
+            )
+        except IntegrityError as e:
+            if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
+                flash(f"Institute “{inst}” does not exist.", "warning")
+            elif e.errno == errorcode.ER_DUP_ENTRY:
+                flash(f"Project name “{new_name}” already in use.", "warning")
+            else:
+                flash("Database integrity error when updating project.", "danger")
+        except Exception:
+            flash("Unexpected error updating project.", "danger")
+        else:
+            flash(f"Updated project “{project_name}”.", "success")
+            return redirect(url_for("projects"))
+
+    # GET (or fall-through)
+    return render_template("projects_edit.html", project=proj)
+
+
+# ——— Delete Project ———
+@app.route("/projects/delete/<project_name>", methods=["POST"])
+def projects_delete(project_name):
+    try:
+        delete_project(project_name)
+    except IntegrityError as e:
+        if e.errno in (errorcode.ER_ROW_IS_REFERENCED_2, errorcode.ER_ROW_IS_REFERENCED):
+            flash(f"Cannot delete project “{project_name}”: dependent records exist.", "warning")
+        else:
+            flash("Database integrity error when deleting project.", "danger")
+    except Exception:
+        flash("Unexpected error deleting project.", "danger")
+    else:
+        flash(f"Deleted project “{project_name}”.", "success")
+    return redirect(url_for("projects"))
+
 @app.route("/fields", methods=["GET", "POST"])
 def fields():
     if request.method == "POST":
@@ -737,6 +865,53 @@ def fields():
         project=proj
     )
 
+# ——— Edit Field ———
+@app.route("/fields/edit/<project>/<field_name>", methods=["GET","POST"])
+def fields_edit(project, field_name):
+    # 1) load current value
+    existing = get_field(project)
+    field = next((f for f in existing if f["FieldName"] == field_name), None)
+    if not field:
+        flash(f"Field “{field_name}” not found in project “{project}”.", "warning")
+        return redirect(url_for("fields", project=project))
+
+    if request.method == "POST":
+        new_name = request.form.get("field_name","").strip()
+        if not new_name:
+            flash("Field name cannot be blank.", "danger")
+            return redirect(url_for("fields_edit", project=project, field_name=field_name))
+        try:
+            update_field(project, field_name, new_name)
+        except IntegrityError as e:
+            if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
+                flash(f"Project “{project}” does not exist.", "warning")
+            elif e.errno == errorcode.ER_DUP_ENTRY:
+                flash(f"Field “{new_name}” already exists in project “{project}”.", "warning")
+            else:
+                flash("Database error updating field.", "danger")
+        except Exception:
+            flash("Unexpected error updating field.", "danger")
+        else:
+            flash(f"Renamed field “{field_name}” → “{new_name}” in project “{project}”.", "success")
+            return redirect(url_for("fields", project=project))
+
+    # GET
+    return render_template("fields_edit.html", project=project, field=field)
+
+
+# ——— Delete Field ———
+@app.route("/fields/delete/<project>/<field_name>", methods=["POST"])
+def fields_delete(project, field_name):
+    try:
+        delete_field(project, field_name)
+    except IntegrityError as e:
+        # e.g. if some analysis rows depend on it
+        flash(f"Cannot delete field “{field_name}”: related records exist.", "warning")
+    except Exception:
+        flash("Unexpected error deleting field.", "danger")
+    else:
+        flash(f"Deleted field “{field_name}” from project “{project}”.", "success")
+    return redirect(url_for("fields", project=project))
 
 @app.route("/project-posts", methods=["GET", "POST"])
 def project_posts():
