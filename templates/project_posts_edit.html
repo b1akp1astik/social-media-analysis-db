@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Edit Project-Post Link{% endblock %}
+
+{% block content %}
+  <h1>Edit Link for Project “{{ link.ProjectName }}”</h1>
+
+  <form method="post">
+    <label>Project:
+      <input name="project" value="{{ link.ProjectName }}" required>
+    </label>
+    <label>Media:
+      <input name="media" value="{{ link.MediaName }}" required>
+    </label>
+    <label>Username:
+      <input name="username" value="{{ link.Username }}" required>
+    </label>
+    <label>TimePosted:
+      <input name="time_posted" value="{{ link.TimePosted }}" required>
+    </label>
+    <button type="submit">Save Changes</button>
+    <a href="{{ url_for('project_posts', project=link.ProjectName) }}">Cancel</a>
+  </form>
+{% endblock %}

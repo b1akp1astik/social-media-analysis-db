@@ -2,28 +2,83 @@
 {% block title %}Project-Post Links{% endblock %}
 
 {% block content %}
-  <h1>Project-Post Associations</h1>
+  <h1>Project-Post Associations{% if project_filter %} for {{ project_filter }}{% endif %}</h1>
 
+  <form method="get" style="margin-bottom:1em;">
+    <label>Filter by project:</label>
+    <select name="project_filter" onchange="this.form.submit()">
+      <option value="">— all —</option>
+      {% for p in all_projects %}
+        <option value="{{ p }}" {% if p == project_filter %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+
+    &nbsp;
+    <label>Filter by media:</label>
+    <select name="media_filter" onchange="this.form.submit()">
+      <option value="">— all —</option>
+      {% for m in all_medias %}
+        <option value="{{ m }}" {% if m == media_filter %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <h2>Link a Post to a Project</h2>
   <form method="post">
-    <label>Project:</label>
-    <input name="project" value="{{ project }}" placeholder="ProjectName" required>
-    <label>Media:</label>
-    <input name="media" placeholder="MediaName" required>
-    <label>Username:</label>
-    <input name="username" placeholder="Username" required>
-    <label>TimePosted:</label>
-    <input name="time_posted" placeholder="YYYY-MM-DD HH:MM:SS" required>
+    <label>Project:
+      <select name="project" required>
+        <option value="">— select —</option>
+        {% for p in all_projects %}
+          <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>Media:
+      <select name="media" required>
+        <option value="">— select —</option>
+        {% for m in all_medias %}
+          <option value="{{ m }}">{{ m }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>Username:
+      <input name="username" placeholder="Username" required>
+    </label>
+
+    <label>TimePosted:
+      <input name="time_posted" placeholder="YYYY-MM-DD HH:MM:SS" required>
+    </label>
+
     <button type="submit">Link Post to Project</button>
   </form>
 
-  <h2>Existing Links{% if project %} for {{ project }}{% endif %}</h2>
+  <h2>Existing Links{% if project_filter %} for {{ project_filter }}{% endif %}</h2>
   <ul>
     {% for l in links %}
       <li>
         {{ l.ProjectName }} ← [{{ l.MediaName }}/{{ l.Username }} @ {{ l.TimePosted }}]
+        <a href="{{ url_for('project_posts_edit',
+            project=l.ProjectName,
+            media=l.MediaName,
+            username=l.Username,
+            time_posted=l.TimePosted
+        ) }}">Edit</a>
+        <form method="post"
+              action="{{ url_for('project_posts_delete',
+                  project=l.ProjectName,
+                  media=l.MediaName,
+                  username=l.Username,
+                  time_posted=l.TimePosted
+              ) }}"
+              style="display:inline"
+        >
+          <button type="submit" onclick="return confirm('Delete this link?')">Delete</button>
+        </form>
       </li>
     {% else %}
-      <li><em>-- none yet --</em></li>
+      <li><em>— none yet —</em></li>
     {% endfor %}
   </ul>
 

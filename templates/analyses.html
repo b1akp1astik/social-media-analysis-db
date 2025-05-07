@@ -31,6 +31,25 @@
         {{ a.ProjectName }} | {{ a.FieldName }} →
         [{{ a.MediaName }}/{{ a.Username }} @ {{ a.TimePosted }}]:
         {{ a.Value }}
+        <a href="{{ url_for('analyses_edit',
+        project=a.ProjectName,
+        field_name=a.FieldName,
+        media=a.MediaName,
+        username=a.Username,
+        time_posted=a.TimePosted
+    ) }}">Edit</a>
+    <form method="post"
+          action="{{ url_for('analyses_delete',
+              project=a.ProjectName,
+              field_name=a.FieldName,
+              media=a.MediaName,
+              username=a.Username,
+              time_posted=a.TimePosted
+          ) }}"
+          style="display:inline"
+    >
+      <button type="submit" onclick="return confirm('Delete this analysis?')">Delete</button>
+    </form>  
       </li>
     {% else %}
       <li><em>-- none yet --</em></li>

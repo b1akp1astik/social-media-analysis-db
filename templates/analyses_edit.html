@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Edit Analysis{% endblock %}
+
+{% block content %}
+  <h1>Edit Analysis</h1>
+
+  <form method="post">
+    <label>Project:
+      <input name="project" value="{{ analysis.ProjectName }}" required>
+    </label>
+    <label>Field Name:
+      <input name="field_name" value="{{ analysis.FieldName }}" required>
+    </label>
+    <label>Media:
+      <input name="media" value="{{ analysis.MediaName }}" required>
+    </label>
+    <label>Username:
+      <input name="username" value="{{ analysis.Username }}" required>
+    </label>
+    <label>TimePosted:
+      <input name="time_posted" value="{{ analysis.TimePosted }}" required>
+    </label>
+    <label>Value:
+      <input name="value" value="{{ analysis.Value }}" required>
+    </label>
+
+    <button type="submit">Save Changes</button>
+    <a href="{{ url_for('analyses', project=analysis.ProjectName) }}">Cancel</a>
+  </form>
+{% endblock %}

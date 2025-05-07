@@ -27,7 +27,7 @@ from app.crud import (
     # Fields
     add_field, get_fields, update_field, delete_field, get_field,
     # Project ↔ Post links
-    add_project_post, get_project_posts, update_project_post, delete_project_post,
+    add_project_post, get_project_posts, update_project_post, delete_project_post, get_project_post,
     # Analyses
     add_post_analysis, get_post_analyses, update_post_analysis, delete_post_analysis,
     # Searches
@@ -915,49 +915,145 @@ def fields_delete(project, field_name):
 
 @app.route("/project-posts", methods=["GET", "POST"])
 def project_posts():
+    # 1) Load dropdown data
+    all_projects = [p["ProjectName"] for p in get_projects()]
+    all_medias   = [m["MediaName"]   for m in get_media()]
+
+    # 2) Read current filters from the URL
+    project_filter = request.args.get("project_filter", "").strip()
+    media_filter   = request.args.get("media_filter",   "").strip()
+
     if request.method == "POST":
-        proj      = request.form.get("project", "").strip()
-        media     = request.form.get("media", "").strip()
-        username  = request.form.get("username", "").strip()
-        time_post = request.form.get("time_posted", "").strip()
+        # 3) Pull & strip your form inputs
+        proj      = request.form["project"].strip()
+        media     = request.form["media"].strip()
+        username  = request.form["username"].strip()
+        time_post = request.form["time_posted"].strip()
 
-        # 1) Required
-        if not all([proj, media, username, time_post]):
-            flash("Project, Media, Username & TimePosted are required.", "danger")
-            return redirect(url_for("project_posts", project=proj))
+        # 4) (Your existing validation goes here...)
+        #    e.g. check required fields, timestamp format, catch IntegrityError, flash, etc.
 
-        # 2) Validate timestamp
-        try:
-            datetime.strptime(time_post, "%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            flash("TimePosted must be YYYY-MM-DD HH:MM:SS.", "warning")
-            return redirect(url_for("project_posts", project=proj))
-
-        # 3) Insert & catch errors
+        # 5) Insert link
         try:
             add_project_post(proj, media, username, time_post)
+        except IntegrityError as e:
+            # handle FK / dup / other errors...
+            flash("Error linking post to project.", "danger")
+        else:
+            flash(f"Linked {media}/{username}@{time_post} → {proj}", "success")
+
+        # 6) Redirect back *with* the current filters preserved
+        return redirect(url_for(
+            "project_posts",
+            project_filter=project_filter,
+            media_filter=media_filter
+        ))
+
+    # ——— GET ———
+    # 7) Fetch *all* links, then apply filters
+    links = get_project_posts()  # returns list of dicts
+    if project_filter:
+        links = [l for l in links if l["ProjectName"] == project_filter]
+    if media_filter:
+        links = [l for l in links if l["MediaName"]   == media_filter]
+
+    # 8) Render template
+    return render_template(
+        "project_posts.html",
+        all_projects=all_projects,
+        all_medias=all_medias,
+        project_filter=project_filter,
+        media_filter=media_filter,
+        links=links
+    )
+
+# ——— Edit Project-Post Link ———
+@app.route(
+  "/project-posts/edit/"
+  "<project>/<media>/<username>/<path:time_posted>",
+  methods=["GET", "POST"]
+)
+def project_posts_edit(project, media, username, time_posted):
+    # 1) Normalize the URL time so it matches DB format
+    try:
+        norm_time = _normalize_timestamp(time_posted, "TimePosted")
+    except ValueError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("project_posts"))
+
+    # 2) Fetch all links for this project, then find the exact one
+    rows = get_project_posts(project)
+    link = next((
+        r for r in rows
+        if (r["ProjectName"] == project
+            and r["MediaName"]   == media
+            and r["Username"]    == username
+            and _normalize_timestamp(str(r["TimePosted"]), "DB Time") == norm_time)
+    ), None)
+
+    if not link:
+        flash(f"Link not found: {project}/{media}/{username}@{time_posted}", "warning")
+        return redirect(url_for("project_posts"))
+
+    if request.method == "POST":
+        # Pull & normalize form inputs
+        new_proj = request.form.get("project", "").strip()
+        new_med  = request.form.get("media",   "").strip()
+        new_usr  = request.form.get("username","").strip()
+        new_time = request.form.get("time_posted","").strip()
+
+        # Required?
+        if not all([new_proj, new_med, new_usr, new_time]):
+            flash("All fields are required.", "danger")
+            return redirect(request.url)
+
+        # Validate timestamp
+        try:
+            new_norm_time = _normalize_timestamp(new_time, "TimePosted")
+        except ValueError as e:
+            flash(str(e), "warning")
+            return redirect(request.url)
+
+        # Attempt update
+        try:
+            update_project_post(
+                project, media, username, norm_time,
+                ProjectName=new_proj,
+                MediaName=new_med,
+                Username=new_usr,
+                TimePosted=new_norm_time
+            )
         except IntegrityError as e:
             if e.errno == errorcode.ER_NO_REFERENCED_ROW_2:
                 flash("Project, media, user or post does not exist.", "warning")
             elif e.errno == errorcode.ER_DUP_ENTRY:
-                flash("This post is already linked to that project.", "warning")
+                flash("That link already exists.", "warning")
             else:
-                flash("Database error linking project to post.", "danger")
+                flash("Database error updating link.", "danger")
         except Exception:
-            flash("Unexpected error linking post to project.", "danger")
+            flash("Unexpected error updating link.", "danger")
         else:
-            flash(f"Linked post [{media}/{username} @ {time_post}] to project “{proj}”.", "success")
+            flash("Link updated successfully!", "success")
+            return redirect(url_for("project_posts"))
 
-        return redirect(url_for("project_posts", project=proj))
+    # GET → render edit form
+    return render_template("project_posts_edit.html", link=link)
 
-    # GET: list links for optional project
-    proj  = request.args.get("project", "").strip()
-    links = get_project_posts(proj)
-    return render_template(
-        "project_posts.html",
-        project=proj,
-        links=links
-    )
+# ——— Delete Project-Post Link ———
+@app.route(
+  "/project-posts/delete/<project>/<media>/<username>/<path:time_posted>",
+  methods=["POST"]
+)
+def project_posts_delete(project, media, username, time_posted):
+    try:
+        delete_project_post(project, media, username, time_posted)
+    except IntegrityError:
+        flash("Cannot delete link: related records exist.", "warning")
+    except Exception:
+        flash("Unexpected error deleting link.", "danger")
+    else:
+        flash("Link deleted.", "success")
+    return redirect(url_for("project_posts", project=project))
 
 @app.route("/analyses", methods=["GET", "POST"])
 def analyses():
@@ -1006,6 +1102,71 @@ def analyses():
         analyses=results,
         project=proj
     )
+
+# ——— Edit Analysis ———
+@app.route(
+  "/analyses/edit/"
+  "<project>/<field_name>/<media>/<username>/<path:time_posted>",
+  methods=["GET", "POST"]
+)
+def analyses_edit(project, field_name, media, username, time_posted):
+    # 1) Find the existing record
+    rows = get_post_analyses(project)
+    analysis = next((
+      a for a in rows
+      if (a["ProjectName"] == project
+          and a["FieldName"]  == field_name
+          and a["MediaName"]  == media
+          and a["Username"]   == username
+          and str(a["TimePosted"]) == time_posted)
+    ), None)
+
+    if not analysis:
+        flash(f"Analysis not found: {project}/{field_name}/{media}/{username}@{time_posted}", "warning")
+        return redirect(url_for("analyses", project=project))
+
+    if request.method == "POST":
+        # 2) Pull new value
+        new_value = request.form.get("value", "").strip()
+        if not new_value:
+            flash("Value cannot be blank.", "danger")
+            return redirect(request.url)
+
+        # 3) Attempt update
+        try:
+            update_post_analysis(
+                project, field_name,
+                media, username, time_posted,
+                new_value
+            )
+        except IntegrityError as e:
+            flash("Database integrity error updating analysis.", "danger")
+        except Exception as e:
+            flash(f"Unexpected error: {e}", "danger")
+        else:
+            flash("Analysis updated successfully!", "success")
+            return redirect(url_for("analyses", project=project))
+
+    # GET → render edit form
+    return render_template("analyses_edit.html", analysis=analysis)
+
+
+# ——— Delete Analysis ———
+@app.route(
+  "/analyses/delete/"
+  "<project>/<field_name>/<media>/<username>/<path:time_posted>",
+  methods=["POST"]
+)
+def analyses_delete(project, field_name, media, username, time_posted):
+    try:
+        delete_post_analysis(project, field_name, media, username, time_posted)
+    except IntegrityError:
+        flash("Cannot delete analysis: related records exist.", "warning")
+    except Exception as e:
+        flash(f"Unexpected error: {e}", "danger")
+    else:
+        flash("Analysis deleted.", "success")
+    return redirect(url_for("analyses", project=project))
 
 @app.route("/search-posts", methods=["GET", "POST"])
 def search_posts():
