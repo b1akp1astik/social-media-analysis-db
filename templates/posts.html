@@ -9,14 +9,34 @@
   {% endif %}
 
   <form method="post">
+    <!-- required -->
     <label>Media:</label>
-    <input name="media" value="{{ media }}" required>
+    <input name="media"      value="{{ media }}"    required>
     <label>Username:</label>
-    <input name="username" value="{{ username }}" required>
+    <input name="username"   value="{{ username }}" required>
     <label>Time (YYYY-MM-DD HH:MM:SS):</label>
-    <input name="time" placeholder="2025-05-06 14:30:00" required>
+    <input name="time"       placeholder="2025-05-06 14:30:00" required>
     <label>Text:</label>
-    <input name="text" required>
+    <input name="text"       required>
+
+    <!-- optional metadata -->
+    <fieldset>
+      <legend>Location (optional)</legend>
+      <label>City:   <input name="city"    placeholder="e.g. Seattle"></label>
+      <label>State:  <input name="state"   placeholder="e.g. WA"></label>
+      <label>Country:<input name="country" placeholder="e.g. USA"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Engagement (optional)</legend>
+      <label>Likes:    <input name="likes"    type="number" min="0" placeholder="0"></label>
+      <label>Dislikes: <input name="dislikes" type="number" min="0" placeholder="0"></label>
+      <label>
+        <input name="has_multimedia" type="checkbox">
+        Contains multimedia
+      </label>
+    </fieldset>
+
     <button type="submit">Add Post</button>
   </form>
 

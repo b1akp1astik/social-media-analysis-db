@@ -137,8 +137,8 @@ def users():
         is_verified = bool(request.form.get("is_verified"))
 
         # 1) Required inputs
-        if not all([media, username, first, last]):
-            flash("Media, username, first name & last name are required.", "danger")
+        if not all([media, username]):
+            flash("Media, username are required.", "danger")
             return redirect(url_for("users", media=media))
 
         # 2) username length

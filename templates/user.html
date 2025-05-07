@@ -4,15 +4,47 @@
 {% block content %}
   <h1>Users for Media: {{ media or "(all)" }}</h1>
 
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes">
+      {% for category, msg in messages %}
+        <li class="flash-{{ category }}">{{ msg }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
   <form method="post">
-    <label>Media:</label>
-    <input name="media" value="{{ media }}" required>
-    <label>Username:</label>
-    <input name="username" required>
-    <label>First Name:</label>
-    <input name="first_name" required>
-    <label>Last Name:</label>
-    <input name="last_name" required>
+    <!-- required -->
+    <label>Media:     <input name="media"       value="{{ media }}" required></label>
+    <label>Username:  <input name="username"    required></label>
+
+    <!-- truly optional -->
+    <fieldset>
+      <legend>Names (optional)</legend>
+      <label>First Name: <input name="first_name" placeholder="e.g. Alice"></label>
+      <label>Last Name:  <input name="last_name"  placeholder="e.g. Smith"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Demographics (optional)</legend>
+      <label>Country of Birth:    <input name="country_birth"    placeholder="e.g. Canada"></label>
+      <label>Country of Residence:<input name="country_residence" placeholder="e.g. USA"></label>
+      <label>Age:                 <input name="age" type="number" min="0" placeholder="e.g. 30"></label>
+      <label>Gender:
+        <select name="gender">
+          <option value="" selected>—</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </label>
+      <label>
+        <input name="is_verified" type="checkbox">
+        Verified user
+      </label>
+    </fieldset>
+
     <button type="submit">Add User</button>
   </form>
 
@@ -20,8 +52,13 @@
   <ul>
     {% for u in users %}
       <li>
-        {{ u.MediaName }} - {{ u.Username }} :
-        {{ u.FirstName }} {{ u.LastName }}
+        {{ u.MediaName }} / {{ u.Username }}
+        {% if u.FirstName or u.LastName %}
+          — {{ u.FirstName or "" }} {{ u.LastName or "" }}
+        {% endif %}
+        {% if u.IsVerified %}
+          <strong>(verified)</strong>
+        {% endif %}
       </li>
     {% else %}
       <li><em>-- no users yet --</em></li>
