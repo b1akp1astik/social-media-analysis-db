@@ -143,24 +143,6 @@ Optional but recommended:
 pytest -q
 ```
 
-This runs unit tests against the CRUD functions to ensure your database operations work.
+This runs unit tests against the CRUD functions to ensure the database operations work.
 
----
-
-## Our Plan of Action
-
-We’re working in four sprints, each with clear roles:
-
-| Sprint | Focus                                   | Deliverables                                        |
-|--------|-----------------------------------------|-----------------------------------------------------|
-| 0      | Kickoff & Environment                   | ER model, schema SQL, repo setup, CI basics         |
-| 1      | Core DB & CRUD                          | DDL scripts, `db.py`, CRUD functions, unit tests    |
-| 2      | Web UI & Queries                        | Flask routes, Jinja templates, advanced search      |
-| 3      | Integration, Testing & Documentation    | E2E QA, final report (ER diagram, schema, screenshots) |
-
-### Team Roles
-
-- **DB Lead**: finalize schema & seed data, write complex SQL  
-- **Backend Lead**: build Python DB connector, CRUD & query functions  
-- **UI Lead**: scaffold Flask views, Jinja templates & navigation  
 
