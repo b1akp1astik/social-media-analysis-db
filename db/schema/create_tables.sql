@@ -103,4 +103,10 @@ CREATE TABLE PostAnalysis (
     REFERENCES Field(ProjectName, FieldName),
   FOREIGN KEY (MediaName, Username, TimePosted)
     REFERENCES Post(MediaName, Username, TimePosted)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  FOREIGN KEY (ProjectName, MediaName, Username, TimePosted)
+    REFERENCES ProjectPost(ProjectName, MediaName, Username, TimePosted)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );

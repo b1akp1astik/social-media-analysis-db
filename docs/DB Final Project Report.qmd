@@ -1,0 +1,65 @@
+---
+title: "Final Report: Social Media Analysis Database"
+author: "Group Members' Names"
+format: pdf
+---
+
+# 1. Introduction
+Briefly describe the purpose of the project, highlighting the importance of analyzing social media posts and clearly stating that the purpose of your database is to store posts and their analytical results, rather than performing the analysis itself.
+
+# 2. Project Requirements
+Provide a concise list of project requirements, taken directly from the project description document, focusing on:
+- Social media posts details (user, media platform, time posted, reposting details, likes/dislikes, multimedia indicators, and location).
+- User information (names, demographics, verification status).
+- Projects and analysis results (project manager, institute, project timeframe, analytical fields).
+
+# 3. Database Design
+## 3.1 ER Diagram
+Insert your final ER Diagram here, clearly showing entities, attributes, relationships, and cardinalities. Explain briefly how entities relate to one another, similar to the provided example.
+
+## 3.2 Relational Schema
+Include your relational schema generated from your ER diagram, with primary keys (PKs) and foreign keys (FKs) clearly labeled. Briefly justify key decisions and constraints (e.g., uniqueness, relationships, referential integrity).
+
+# 4. Implementation
+## 4.1 Database Schema Implementation
+Show the actual SQL `CREATE TABLE` statements used in MySQL/MariaDB. Briefly describe each table’s purpose and key constraints or relationships to other tables.
+
+## 4.2 Data Integrity
+Explain how your schema ensures data integrity through constraints such as primary keys, foreign keys, NOT NULL, and unique constraints, similar to the provided example.
+
+## 4.3 Handling Duplicate and Partial Data Entries
+Briefly describe methods implemented in your application logic to avoid duplicate entries and to support partial data entries (e.g., partial analysis results).
+
+# 5. Application Functionality
+## 5.1 Data Entry Operations
+Describe how your application handles the following data entry operations:
+- Adding new projects (project details and associated fields).
+- Associating existing posts with a project.
+- Recording analysis results, including handling partial results.
+
+## 5.2 Query Operations
+Detail how your application supports queries, clearly outlining:
+- Query posts by social media, date/time, username, or user's name.
+- Query experiments/projects, including listing posts analyzed and analysis results.
+- Calculation and display of field coverage percentages in analyses.
+
+# 6. Example Usage
+Provide one or two clear usage examples demonstrating how data is added, queried, and results returned. Include screenshots or mock-ups if available.
+
+# 7. Results and Evaluation
+Briefly evaluate your final system based on the rubrics provided, addressing:
+- Completeness and accuracy of implemented functionalities.
+- Data integrity maintenance.
+- User interface usability (briefly).
+
+# 8. Challenges and Solutions
+Identify any significant challenges encountered during design or implementation and briefly describe how they were overcome or addressed.
+
+# 9. Conclusion
+Summarize the completed system and the major achievements of your project. Briefly discuss potential improvements or extensions for future work.
+
+# 10. Contributions
+Clearly list each group member's responsibilities and contributions to the project.
+
+# References
+Cite any external references, libraries, or tools used (e.g., MySQL documentation, Flask, etc.).
