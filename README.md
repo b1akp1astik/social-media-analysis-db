@@ -143,13 +143,6 @@ Optional but recommended:
 pytest -q
 ```
 
-This runs unit tests against the CRUD functions to ensure your database operations work.
+This runs unit tests against the CRUD functions to ensure the database operations work.
 
----
-
-### Team Roles
-
-- **DB Lead**: finalize schema & seed data, write complex SQL  
-- **Backend Lead**: build Python DB connector, CRUD & query functions  
-- **UI Lead**: scaffold Flask views, Jinja templates & navigation  
 
