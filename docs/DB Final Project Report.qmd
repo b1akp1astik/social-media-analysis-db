@@ -4,8 +4,13 @@ author: "Harley Gribble, Jason Zeng, Matthew Virginia"
 format: pdf
 ---
 
-Full Project is available in - GitHub repo:  
-  https://github.com/b1akp1astik/social-media-analysis-db  
+## Abstract
+
+This project presents the design and implementation of a database-backed web application for the structured analysis of social media content across multiple platforms and research projects. Developed using MySQL and Flask, the system enables users to create and manage posts, users, institutes, and projects, while defining project-specific analytic fields and recording manual annotations. The data model incorporates normalized tables, composite and foreign keys, and constraint-driven relationships, including support for ternary associations. A browser-based interface allows for form-driven data entry, post-project assignment, and field-level annotation, with built-in validation for logical consistency. The application also includes tools to query posts and monitor analysis coverage by field. The resulting system fulfills all core project requirements and provides a flexible, extensible framework for research teams conducting qualitative analysis of online content. Full Project is available in GitHub repository: https://github.com/b1akp1astik/social-media-analysis-db.  
+
+\newpage
+
+\tableofcontents
 
 \newpage
 
@@ -56,7 +61,7 @@ These requirements guided the schema design, application logic, and user interfa
 
 The conceptual Entity-Relationship (ER) diagram for this system was designed using standard ER modeling notation, as outlined in the course materials. It includes rectangles for entities, diamonds for relationships, and ovals for attributes. Primary keys are underlined, and relationship cardinalities are shown explicitly using standard notation (e.g., 1:N, M:N) along with participation constraints where relevant.
 
-![Conceptual ER Diagram](A_Entity-Relationship_(ER)_diagram_in_black_and_wh.png)
+![Conceptual ER Diagram](images/er_diagram.png)
 
 ### Key Design Features
 
@@ -239,7 +244,7 @@ The logical relational schema was implemented in MySQL. Each entity and relation
 
 The figure below shows the implemented schema as visualized in DBeaver. It illustrates the primary and foreign key relationships and table-level structure.
 
-![Relational Schema Diagram](relational_schema_dbeaver.png)
+![Relational Schema Diagram](images/social_media_schematic.png)
 
 ## 4.2 SQL Table Definitions
 
@@ -443,42 +448,8 @@ The system is a web-based database application built using Python’s Flask fram
 
 ### Folder Structure and Core Components
 
-```
-social-media-analysis-db/
-│
-├── db/
-│   ├── schema/
-│   │   └── create_tables.sql       # DDL: all CREATE TABLE, FKs & CHECKs
-│   └── dumps/
-│       └── social_media_dump.sql   # mysqldump of schema + sample seed data
-│
-├── app/
-│   ├── db_config.py.template       # copy → db_config.py with your credentials
-│   ├── db.py                       # MySQL connection & run_query() helper
-│   └── crud.py                     # all add_/get_/find_ functions
-│
-├── templates/                      # Jinja2 HTML templates
-│   ├── base.html                   # global nav + common layout
-│   ├── media.html                  # Create/List SocialMedia
-│   ├── user.html                   # Create/List Users
-│   ├── posts.html                  # Create/List Posts
-│   ├── reposts.html                # Create/List Reposts
-│   ├── institutes.html             # Create/List Institutes
-│   ├── projects.html               # Create/List Projects
-│   ├── fields.html                 # Create/List Fields
-│   ├── project_posts.html          # Create/List Project-Post links
-│   ├── analyses.html               # Create/List PostAnalyses
-│   ├── search_posts.html           # Search Posts form & results
-│   └── search_experiments.html     # Search Experiments form & results
-│
-├── tests/
-│   └── test_crud.py                # pytest unit tests for crud layer
-│
-├── app.py                          # Flask application entry point
-├── requirements.txt                # Flask, mysql-connector-python, pytest
-├── .gitignore                      # ignore venv, pycache, db_config.py, etc.
-└── README.md                       # this file
-```
+
+![Directory Tree](images/file_tree.png)
 
 - **`app.py`**  
   The main entry point for the Flask application. It initializes the app, registers routes, and launches the server at runtime. When executed, it starts the web service on `http://localhost:5000`.
@@ -1097,9 +1068,9 @@ In its current form, the system serves as a solid foundation for structured, man
 # 13. Contributions
 
 List group member roles and tasks:
-- Member A: Flask backend, CRUD logic
-- Member B: Schema design, ER diagram
-- Member C: Frontend templates, validation
-- Member D: Testing, demo, and report
+- Jason Zeng: Python backend, CRUD logic, ER diagram
+- Harley Gribble: Schema design, MyQSL Database set up, Frontend templates
+- Matthew Virginia: Testing, validation, flask frontend
+- All: demo, and report
 
 ---
