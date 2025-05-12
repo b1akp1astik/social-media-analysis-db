@@ -8,7 +8,7 @@ from flask import (
     flash,
     get_flashed_messages
 )
-from mysql.connector import IntegrityError, errorcode
+from mysql.connector import IntegrityError, errorcode, DatabaseError
 from datetime import datetime
 
 from app.crud import (
@@ -342,6 +342,11 @@ def posts():
                 return redirect(url_for("posts", media=media, username=username))
         normalized_time = dt.strftime("%Y-%m-%d %H:%M:%S")
 
+        # <-- **NEW**: reject any dt in the future
+        if dt > datetime.now():
+            flash("Post time cannot be in the future.", "danger")
+            return redirect(url_for("posts", media=media, username=username))
+
         # Insert
         try:
             add_post(media, username, normalized_time, text,
@@ -397,9 +402,7 @@ def post_edit(media, username, time_posted):
     rows = get_posts(media, username)
     post = None
     for p in rows:
-        # p["TimePosted"] might be a datetime; convert to string
         ts = p["TimePosted"]
-        # if it's not already a string, format it
         if not isinstance(ts, str):
             ts = ts.strftime("%Y-%m-%d %H:%M:%S")
         if ts == norm_key:
@@ -411,16 +414,17 @@ def post_edit(media, username, time_posted):
         return redirect(url_for("posts", media=media, username=username))
 
     if request.method == "POST":
-        # pull & normalize again for updates
-        raw_time = request.form.get("time", "").strip()
-        text     = request.form.get("text", "").strip()
-        city     = request.form.get("city") or None
-        state    = request.form.get("state") or None
-        country  = request.form.get("country") or None
+        # pull & strip inputs
+        raw_time      = request.form.get("time", "").strip()
+        text          = request.form.get("text", "").strip()
+        city          = request.form.get("city") or None
+        state         = request.form.get("state") or None
+        country       = request.form.get("country") or None
+        likes_raw     = request.form.get("likes", "").strip()
+        dislikes_raw  = request.form.get("dislikes", "").strip()
+        has_multimedia= bool(request.form.get("has_multimedia"))
 
         # validate likes/dislikes
-        likes_raw    = request.form.get("likes", "").strip()
-        dislikes_raw = request.form.get("dislikes", "").strip()
         try:
             likes    = int(likes_raw)    if likes_raw    else 0
             dislikes = int(dislikes_raw) if dislikes_raw else 0
@@ -433,8 +437,7 @@ def post_edit(media, username, time_posted):
                                     username=username,
                                     time_posted=time_posted))
 
-        has_multimedia = bool(request.form.get("has_multimedia"))
-
+        # required
         if not all([raw_time, text]):
             flash("Time and text are required.", "danger")
             return redirect(url_for("post_edit",
@@ -442,8 +445,10 @@ def post_edit(media, username, time_posted):
                                     username=username,
                                     time_posted=time_posted))
 
+        # parse & normalize + get a datetime for future check
         try:
             normalized_time = _normalize_timestamp(raw_time, "Time")
+            dt = datetime.strptime(normalized_time, "%Y-%m-%d %H:%M:%S")
         except ValueError as e:
             flash(str(e), "danger")
             return redirect(url_for("post_edit",
@@ -451,7 +456,15 @@ def post_edit(media, username, time_posted):
                                     username=username,
                                     time_posted=time_posted))
 
-        # attempt update (note: updating TimePosted will change the PK)
+        # reject any dt in the future
+        if dt > datetime.now():
+            flash("Post time cannot be in the future.", "danger")
+            return redirect(url_for("post_edit",
+                                    media=media,
+                                    username=username,
+                                    time_posted=time_posted))
+
+        # attempt update
         try:
             update_post(
                 media, username, norm_key,
@@ -498,14 +511,6 @@ def post_delete(media, username, time_posted):
         flash("Post deleted.", "success")
     return redirect(url_for("posts", media=media, username=username))
 
-def _normalize_timestamp(ts: str, label: str) -> str:
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
-        try:
-            return datetime.strptime(ts, fmt).strftime("%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            continue
-    raise ValueError(f"{label} must be in YYYY-MM-DD HH:MM[:SS] format.")
-
 # ——— List & Create Reposts ———
 @app.route("/reposts", methods=["GET", "POST"])
 def reposts():
@@ -513,23 +518,33 @@ def reposts():
     orig_media = request.args.get("orig_media", "").strip()
 
     if request.method == "POST":
-        om, ou, ot, rm, ru, rt = (
+        om, ou, ot_raw, rm, ru, rt_raw = (
             request.form.get(f, "").strip()
             for f in ("orig_media","orig_user","orig_time",
                       "rep_media","rep_user","repost_time")
         )
 
-        if not all([om, ou, ot, rm, ru, rt]):
+        if not all([om, ou, ot_raw, rm, ru, rt_raw]):
             flash("All repost fields are required.", "danger")
             return redirect(url_for("reposts", orig_media=om))
 
+        # 1) normalize timestamps
         try:
-            ot = _normalize_timestamp(ot, "Original time")
-            rt = _normalize_timestamp(rt, "Repost time")
+            ot = _normalize_timestamp(ot_raw, "Original time")
+            rt = _normalize_timestamp(rt_raw, "Repost time")
         except ValueError as e:
             flash(str(e), "danger")
             return redirect(url_for("reposts", orig_media=om))
 
+        # 2) reject any time in the future
+        now = datetime.now()
+        dt_ot = datetime.strptime(ot, "%Y-%m-%d %H:%M:%S")
+        dt_rt = datetime.strptime(rt, "%Y-%m-%d %H:%M:%S")
+        if dt_ot > now or dt_rt > now:
+            flash("Neither original nor repost time can be in the future.", "danger")
+            return redirect(url_for("reposts", orig_media=om))
+
+        # 3) delegate to DB
         try:
             add_repost(om, ou, ot, rm, ru, rt)
         except IntegrityError as e:
@@ -539,6 +554,14 @@ def reposts():
                 flash("This repost already exists.", "warning")
             else:
                 flash("Database integrity error adding repost.", "danger")
+        except DatabaseError as e:
+            # MySQL CHECK‐constraint violation comes through here
+            if getattr(e, 'errno', None) == 3819:
+                flash("Repost time must be on or after the original post time.", "danger")
+            else:
+                flash("Database error adding repost.", "danger")
+        except Exception:
+            flash("Unexpected error adding repost.", "danger")
         else:
             flash("Repost recorded successfully!", "success")
             return redirect(url_for("reposts", orig_media=om))
@@ -563,12 +586,12 @@ def repost_edit(orig_media, orig_user, orig_time, rep_media, rep_user, repost_ti
     rows = get_reposts(orig_media) or []
     repost = next((
         r for r in rows
-        if str(r["OrigMedia"])     == orig_media
-        and str(r["OrigUser"])     == orig_user
-        and str(r["OrigTime"])     == orig_time
-        and str(r["ReposterMedia"])== rep_media
-        and str(r["ReposterUser"]) == rep_user
-        and str(r["RepostTime"])   == repost_time
+        if (str(r["OrigMedia"])      == orig_media
+            and str(r["OrigUser"])   == orig_user
+            and str(r["OrigTime"])   == orig_time
+            and str(r["ReposterMedia"])== rep_media
+            and str(r["ReposterUser"]) == rep_user
+            and str(r["RepostTime"])   == repost_time)
     ), None)
 
     if not repost:
@@ -576,38 +599,57 @@ def repost_edit(orig_media, orig_user, orig_time, rep_media, rep_user, repost_ti
         return redirect(url_for("reposts", orig_media=orig_media))
 
     if request.method == "POST":
-        new_vals = {k: request.form.get(k, "").strip() for k in
-                    ("orig_media","orig_user","orig_time",
-                     "rep_media","rep_user","repost_time")}
+        # pull & strip
+        new_vals = {
+            k: request.form.get(k, "").strip()
+            for k in ("orig_media","orig_user","orig_time",
+                      "rep_media","rep_user","repost_time")
+        }
         if not all(new_vals.values()):
             flash("All fields are required.", "danger")
             return redirect(request.url)
 
+        # normalize timestamps
         try:
-            new_vals["orig_time"]  = _normalize_timestamp(new_vals["orig_time"],  "Original time")
-            new_vals["repost_time"]= _normalize_timestamp(new_vals["repost_time"],"Repost time")
+            new_ot = _normalize_timestamp(new_vals["orig_time"],  "Original time")
+            new_rt = _normalize_timestamp(new_vals["repost_time"],"Repost time")
         except ValueError as e:
             flash(str(e), "danger")
             return redirect(request.url)
 
+        # reject future times
+        now = datetime.now()
+        dt_ot = datetime.strptime(new_ot, "%Y-%m-%d %H:%M:%S")
+        dt_rt = datetime.strptime(new_rt, "%Y-%m-%d %H:%M:%S")
+        if dt_ot > now or dt_rt > now:
+            flash("Neither original nor repost time can be in the future.", "danger")
+            return redirect(request.url)
+
+        # attempt update
         try:
             update_repost(
                 orig_media, orig_user, orig_time, repost_time,
                 OrigMedia=new_vals["orig_media"],
                 OrigUser=new_vals["orig_user"],
-                OrigTime=new_vals["orig_time"],
+                OrigTime=new_ot,
                 ReposterMedia=new_vals["rep_media"],
                 ReposterUser=new_vals["rep_user"],
-                RepostTime=new_vals["repost_time"],
+                RepostTime=new_rt,
             )
         except IntegrityError:
             flash("Database integrity error updating repost.", "danger")
+        except DatabaseError as e:
+            if getattr(e, 'errno', None) == 3819:
+                flash("Repost time must be on or after the original post time.", "danger")
+            else:
+                flash("Database error updating repost.", "danger")
+        except Exception:
+            flash("Unexpected error updating repost.", "danger")
         else:
             flash("Repost updated successfully!", "success")
             return redirect(url_for("reposts", orig_media=new_vals["orig_media"]))
 
     return render_template("repost_edit.html", repost=repost)
-
 
 # ——— Delete Repost ———
 @app.route(

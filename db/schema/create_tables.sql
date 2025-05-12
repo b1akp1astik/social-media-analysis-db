@@ -50,7 +50,9 @@ CREATE TABLE Repost (
   FOREIGN KEY (OrigMedia, OrigUser, OrigTime)
     REFERENCES Post(MediaName, Username, TimePosted),
   FOREIGN KEY (ReposterMedia, ReposterUser)
-    REFERENCES User(MediaName, Username)
+    REFERENCES User(MediaName, Username),
+  CONSTRAINT chk_repost_after_orig
+    CHECK (RepostTime >= OrigTime)
 );
 
 -- 5. Institutes
