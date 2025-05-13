@@ -6,7 +6,7 @@ format: pdf
 
 ## Abstract
 
-This project presents the design and implementation of a database-backed web application for the structured analysis of social media content across multiple platforms and research projects. Developed using MySQL and Flask, the system enables users to create and manage posts, users, institutes, and projects, while defining project-specific analytic fields and recording manual annotations. The data model incorporates normalized tables, composite and foreign keys, and constraint-driven relationships, including support for ternary associations. A browser-based interface allows for form-driven data entry, post-project assignment, and field-level annotation, with built-in validation for logical consistency. The application also includes tools to query posts and monitor analysis coverage by field. The resulting system fulfills all core project requirements and provides a flexible, extensible framework for research teams conducting qualitative analysis of online content. Full Project is available in GitHub repository: https://github.com/b1akp1astik/social-media-analysis-db.  
+This project presents the design and implementation of a database-backed web application for the structured analysis of social media content across multiple platforms and research projects. Developed using MySQL and Flask, the system enables users to create and manage posts, users, institutes, and projects, while defining project-specific analytic fields and recording manual annotations. The data model incorporates normalized tables, composite and foreign keys, and constraint-driven relationships, including support for ternary associations. A browser-based interface allows for form-driven data entry, post-project assignment, and field-level annotation, with built-in validation for logical consistency. The application also includes tools to query posts and monitor analysis coverage by field. The resulting system fulfills all core project requirements and provides a flexible, extensible framework for research teams conducting qualitative analysis of online content. Full Project is available in GitHub repository: [https://github.com/b1akp1astik/social-media-analysis-db](https://github.com/b1akp1astik/social-media-analysis-db).  
 
 \newpage
 
@@ -55,138 +55,9 @@ These requirements guided the schema design, application logic, and user interfa
 
 \newpage
 
-# 3. Conceptual Database Design
+# 3. Database Schema
 
-## 3.1 ER Diagram
-
-The conceptual Entity-Relationship (ER) diagram for this system was designed using standard ER modeling notation, as outlined in the course materials. It includes rectangles for entities, diamonds for relationships, and ovals for attributes. Primary keys are underlined, and relationship cardinalities are shown explicitly using standard notation (e.g., 1:N, M:N) along with participation constraints where relevant.
-
-![Conceptual ER Diagram](images/er_diagram.png)
-
-### Key Design Features
-
-- **User–SocialMedia Relationship (`BelongsTo`)**  
-  Each user is uniquely associated with a specific social media platform. This relationship is modeled with total participation from `User`, indicating that a user cannot exist in the system without being tied to a platform.
-
-- **User–Post Relationship (`Posts`)**  
-  Users create original posts, forming a 1:N relationship. Each post is authored by exactly one user, while a user may create many posts.
-
-- **User–Post Reposting Relationship (`Reposts`)**  
-  Users may repost existing posts. This is modeled as a separate binary relationship with an attribute `RepostTime`, capturing the timestamp of the repost. This allows for distinguishing reposted content from original posts while maintaining clear referential links.
-
-- **Project–Institute Relationship (`ManagedBy`)**  
-  Each project is created and managed by a single institute. This simple 1:N relationship establishes project ownership and administrative affiliation.
-
-- **Project–Field Relationship (`Defines`)**  
-  Projects define one or more fields that describe the type of analysis to be conducted (e.g., sentiment, category). These fields are stored as named attributes associated with the project context.
-
-- **Post–Project Assignment (`AssignedTo`)**  
-  Posts can be assigned to multiple projects, and projects can analyze many posts. This M:N relationship is implemented in the logical model through a join table (`ProjectPost`), and supports reusing the same content across analytical contexts.
-
-- **Ternary Relationship: `PostAnalysis`**  
-  The centerpiece of the analysis process is a ternary relationship connecting `Post`, `Field`, and `Project`. This models the fact that each field-value pair is meaningful only in the context of a particular project and post. The relationship includes an attribute `Value`, representing the manual analysis result as a string.
-
-This conceptual design guided the logical and physical structure of the final database.  
-
-## 3.2 Entity and Relationship Descriptions
-
-The following entities and relationships were identified and modeled in the conceptual design. Each component supports the functional goals of storing, organizing, and analyzing social media content across projects, while enforcing relational integrity and supporting extensibility.
-
----
-
-### **Entities**
-
-- **User**  
-  Represents an individual account on a social media platform.  
-  - **Primary Key**: Composite key (`MediaName`, `Username`)  
-  - **Attributes**: FirstName, LastName, CountryOfBirth, CountryOfResidence, Age, Gender, IsVerified  
-  - **Design Notes**: Each user must be tied to exactly one social media platform; demographic attributes are optional to support flexible data entry.
-
-- **SocialMedia**  
-  Defines supported social media platforms such as Twitter, Instagram, or others.  
-  - **Primary Key**: `MediaName`  
-  - **Attributes**: MediaName (e.g., "Twitter")  
-  - **Design Notes**: Used as a parent entity for associating users with their platform.
-
-- **Post**  
-  Stores original content posted by users.  
-  - **Primary Key**: Composite key (`MediaName`, `Username`, `TimePosted`)  
-  - **Attributes**: TextContent, City, State, Country, Likes, Dislikes, HasMultimedia  
-  - **Design Notes**: Posts are uniquely identified by the user-platform pair and timestamp. Optional fields allow partial metadata, such as geographic info or multimedia presence.
-
-- **Repost**  
-  Represents a user reposting another user's original post.  
-  - **Primary Key**: Composite key (`PostID`, `ReposterMedia`, `ReposterUsername`)  
-  - **Attributes**: RepostTime  
-  - **Design Notes**: Serves as a weak entity or relationship linking reposts to their original posts. Each repost includes its own timestamp and is connected to both the original post and the reposting user.
-
-- **Institute**  
-  Represents an organization responsible for managing research projects.  
-  - **Primary Key**: `InstituteName`  
-  - **Attributes**: InstituteName  
-  - **Design Notes**: Institutes serve as the top-level organizing body for research and project ownership.
-
-- **Project**  
-  Represents an analysis project that assigns posts and defines analytic fields.  
-  - **Primary Key**: `ProjectName`  
-  - **Attributes**: ManagerFirstName, ManagerLastName, StartDate, EndDate  
-  - **Design Notes**: Each project is associated with one institute, and may define any number of analysis fields.
-
-- **Field**  
-  Represents a named analysis label (e.g., "Sentiment") defined within the context of a project.  
-  - **Primary Key**: Composite key (`ProjectName`, `FieldName`)  
-  - **Design Notes**: Fields are not shared between projects. Each project manages its own list of analytic dimensions.
-
----
-
-### **Relationships**
-
-- **BelongsTo** (`User` → `SocialMedia`)  
-  - **Type**: 1:N  
-  - **Participation**: Total from `User`  
-  - **Description**: Each user must belong to exactly one social media platform. Platforms may have many users.
-
-- **Posts** (`User` → `Post`)  
-  - **Type**: 1:N  
-  - **Participation**: Total from `Post`  
-  - **Description**: Each post is authored by exactly one user; a user may author many posts.
-
-- **Reposts** (`User` ↔ `Post`)  
-  - **Type**: M:N  
-  - **Attributes**: `RepostTime`  
-  - **Description**: Users can repost content from other users. Each repost is modeled with its own timestamp and links the reposting user to the original post.
-
-- **ManagedBy** (`Project` → `Institute`)  
-  - **Type**: N:1  
-  - **Participation**: Total from `Project`  
-  - **Description**: Each project is managed by a single institute; institutes may manage multiple projects.
-
-- **Defines** (`Project` → `Field`)  
-  - **Type**: 1:N  
-  - **Participation**: Total from `Field`  
-  - **Description**: Projects define one or more analysis fields. Each field belongs to exactly one project.
-
-- **Assigns** (`Project` ↔ `Post`)  
-  - **Type**: M:N  
-  - **Implementation**: Through join table `ProjectPost`  
-  - **Description**: A post can be assigned to multiple projects for analysis; each project can analyze many posts.
-
-- **AnalyzedIn** (`Post`, `Project`, `Field`)  
-  - **Type**: Ternary  
-  - **Attributes**: `Value`  
-  - **Description**: Represents the result of a field-level annotation applied to a post within a project. Each entry stores a string value (e.g., "positive", "satirical") and supports partial results (not all fields need to be completed).
-
----
-
-This conceptual structure ensures referential integrity and reflects the flexible, many-to-many nature of real-world post analysis workflows.
-
----
-
-\newpage
-
-# 4. Logical Schema
-
-## 4.1 Relational Schema Overview
+## 3.1 Relational Schema Overview
 
 The logical relational schema was implemented in MySQL. Each entity and relationship maps to one or more tables in the final database. The design emphasizes normalization, constraint enforcement, and flexibility to support dynamic analysis use cases.
 
@@ -246,7 +117,7 @@ The figure below shows the implemented schema as visualized in DBeaver. It illus
 
 ![Relational Schema Diagram](images/social_media_schematic.png)
 
-## 4.2 SQL Table Definitions
+## 3.2 SQL Table Definitions
 
 The following tables were implemented in MySQL to reflect the conceptual and logical design of the system. Each table definition is accompanied by a brief explanation of its purpose, keys, and relevant constraints.
 
@@ -440,9 +311,9 @@ CREATE TABLE PostAnalysis (
 
 \newpage
 
-# 5. Implementation
+# 4. Implementation
 
-## 5.1 System Architecture
+## 4.1 System Architecture
 
 The system is a web-based database application built using Python’s Flask framework and a MySQL relational backend. It follows a modular architecture that separates database logic, application routes, and interface templates to ensure maintainability and clarity.
 
@@ -495,7 +366,7 @@ The application allows users to perform a variety of data management and explora
 This architecture ensures a clean separation between data management, business logic, and user interface, while offering a complete and user-friendly interface for conducting manual social media post analysis.
 
 
-## 5.2 Data Integrity and Validation
+## 4.2 Data Integrity and Validation
 
 Ensuring data integrity was a central focus of both the database schema design and the application logic. A combination of SQL-level constraints and Flask-based validation routines was used to enforce consistency, prevent logical errors, and allow flexible but controlled data entry.
 
@@ -537,11 +408,11 @@ Together, these integrity and validation mechanisms ensure that the data remains
 
 \newpage
 
-# 6. Application Features
+# 5. Application Features
 
 The application provides a structured, form-based web interface that enables users to perform core data entry tasks and execute targeted queries across social media posts and research projects. All interaction occurs through clearly labeled HTML pages generated from Jinja2 templates.
 
-## 6.1 Data Entry Features
+## 5.1 Data Entry Features
 
 Data entry in the system is fully form-driven and segmented into logical modules accessible through the navigation bar. Each entity has a dedicated view for both creating new records and editing existing ones.
 
@@ -573,7 +444,7 @@ Data entry in the system is fully form-driven and segmented into logical modules
   Once a post has been assigned to a project, users may input string-valued results for any defined fields. Partial results are allowed—fields may be left blank and completed later. The system validates that each result corresponds to an assigned post and valid field.  
   *View used:* `analyses.html`, `analyses_edit.html`
 
-## 6.2 Query Features
+## 5.2 Query Features
 
 The application includes built-in search tools to help researchers locate and explore relevant data across the system. These searches are executed via form inputs and rendered as structured tables for readability.
 
@@ -596,7 +467,7 @@ All query views are read-only and optimized for clarity and usability. They are 
 
 \newpage
 
-# 7. Example Usage
+# 6. Example Usage
 
 This section illustrates a basic use case of the system, demonstrating how a researcher would interact with the interface to create entities, annotate a post, and view analysis progress. It provides a high-level overview of how the system supports the analytical workflow.
 
@@ -635,7 +506,7 @@ This example shows how the system enables manual, structured analysis of social 
 
 \newpage
 
-# 8. Testing
+# 7. Testing
 
 Testing for this project was conducted using the `pytest` framework to ensure the correctness of CRUD operations and the enforcement of relational integrity. Unit tests are located in the file `tests/test_crud.py` and are designed to verify that the backend functions behave as expected in isolation and in sequence.
 
@@ -669,10 +540,14 @@ This will run all test cases in a minimal format, showing only passed or failed 
 
 ### Coverage and Scope
 
-The test suite provides coverage for:
-- Basic CRUD operations for all major entities
-- Edge-case validation
-- Relational consistency using primary and foreign key constraints
+The test suite provides coverage for:  
+
+- Basic CRUD operations for all major entities  
+
+- Edge-case validation  
+
+- Relational consistency using primary and foreign key constraints  
+
 - Correct sequencing of inserts to support dependencies (e.g., project before field, user before post)
 
 Additional UI-level and integration testing was conducted manually within the application, but the current tests provide strong backend confidence and align well with the goals and constraints of the assignment.
@@ -681,7 +556,7 @@ Additional UI-level and integration testing was conducted manually within the ap
 
 \newpage
 
-# 9. Installation and User Manual
+# 8. Installation and User Manual
 
 This section provides a step-by-step guide for installing, configuring, and running the system. It is written for junior computer science students who may have no prior experience with databases or web frameworks.
 
@@ -689,7 +564,7 @@ All instructions assume the user is starting from a clean local machine and aims
 
 ---
 
-## 9.1 System Requirements
+## 8.1 System Requirements
 
 Before beginning the installation, ensure the following software is installed and functioning on your system:
 
@@ -752,7 +627,7 @@ Although not strictly required, having a MySQL client will help for running SQL 
 Once these system requirements are met, proceed to the next section: **9.2 Setup Instructions**, where we will walk through cloning the repository, configuring credentials, and launching the web application.
 
 
-## 9.2 Setup Instructions
+## 8.2 Setup Instructions
 
 The following instructions guide the user through setting up the social media analysis database application on a local machine. This includes cloning the project, installing dependencies, configuring the database, and running the Flask web server.
 
@@ -791,8 +666,6 @@ Open your MySQL client and log in as a user with sufficient privileges (e.g., `r
 
 ```sql
 CREATE USER 'cs5330'@'localhost' IDENTIFIED BY 'cs5330';
-GRANT ALL PRIVILEGES ON social_media.* TO 'cs5330'@'localhost';
-FLUSH PRIVILEGES;
 ```
 
 ---
@@ -821,7 +694,16 @@ SOURCE db/schema/create_tables.sql;
 
 This will create all necessary tables with primary keys, foreign keys, constraints, and default values.
 
-4. *(Optional)*: Load example data to test functionality:
+4. Grant user privelages to app:  
+
+```sql
+GRANT ALL PRIVILEGES ON social_media.* TO 'cs5330'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+This will allow the app to interface with the database.
+
+5. *(Optional)*: Load example data to test functionality:
 
 ```sql
 SOURCE db/dumps/social_media_dump.sql;
@@ -885,7 +767,7 @@ You should see the home page of the Social Media Analysis Database. From here, y
 After completing these steps, the application is ready for use in a local development environment. For further guidance on how to use each interface, see the next section: **9.3 How to Use the App**.
 
 
-## 9.3 How to Use the App
+## 8.3 How to Use the App
 
 Once the application is running and accessible via `http://127.0.0.1:5000/`, users can interact with the system entirely through the web browser. The interface is organized around a horizontal navigation bar at the top of the page, with separate pages (views) for each major entity or task.
 
@@ -907,7 +789,7 @@ Use the following tabs in the navigation bar to enter and manage data:
 - Optional demographic fields include first/last name, age, gender, country of birth/residence, and verification status.
 - Users are identified by `(MediaName, Username)`.
 
-#### **Posts**
+#### **Posts**  
 - Create original posts by selecting an existing user and entering:
   - Timestamp (must be unique per user)
   - Text content (required)
@@ -974,56 +856,32 @@ Use the following tabs in the navigation bar to enter and manage data:
 
 After completing entries in each section, data is automatically saved and displayed in the corresponding table. The application supports editing or deleting entries through the interface, and error messages are shown when constraints are violated (e.g., duplicate keys or invalid repost times).
 
-For best results, users should proceed in the following order:
-1. Add media platforms and institutes
-2. Add users and posts
-3. Create projects and fields
-4. Assign posts to projects
-5. Enter field-level analysis values
-6. Use search tools to review data and track project progress
+For best results, users should proceed in the following order:  
+
+1. Add media platforms and institutes  
+
+2. Add users and posts  
+
+3. Create projects and fields  
+
+4. Assign posts to projects  
+
+5. Enter field-level analysis values  
+
+6. Use search tools to review data and track project progress  
 
 
 ---
 
 \newpage
 
-# 10. Evaluation
-
-The system successfully fulfills all core project requirements. It provides a relational structure that models users, posts, projects, and analytical fields with appropriate constraints and flexibility. Each functional component—data entry, assignment, analysis, and querying—has been implemented and tested in alignment with the project scope.
-
-### Strengths
-
-- **Relational Structure**  
-  The database schema is normalized, uses meaningful primary and foreign keys, and enforces referential integrity throughout all tables.
-
-- **UI Clarity**  
-  The interface is logically organized, with separate views for each entity and form-based interaction. Users can easily navigate through data entry and query features without needing SQL knowledge.
-
-- **Support for Partial Analysis**  
-  The system allows posts to be annotated incrementally. Not all fields must be filled at once, which aligns well with realistic research workflows.
-
-The system provides a reliable foundation for managing and annotating social media data in a research setting.
-
-
----
-
-\newpage
-
-# 11. Challenges and Lessons Learned
+# 9. Challenges and Lessons Learned
 
 Throughout the development of this project, several challenges emerged that led to meaningful technical and conceptual learning. These included database modeling decisions, enforcing application logic, and learning new frameworks.
 
-### Conceptual vs. Logical Modeling
-
-One of the most significant early challenges was understanding the distinction between a conceptual ER diagram and a relational schema. Our initial submission confused the two, using a schema-like format instead of symbolic ER modeling conventions. Revisiting this distinction helped us design a proper conceptual ER diagram and improved our ability to communicate abstract data models before implementation.
-
-### Ternary Relationship and Foreign Key Logic
-
-Modeling the `PostAnalysis` table as a ternary relationship (between `Post`, `Project`, and `Field`) introduced several complexities. Ensuring that each analysis entry only applied to a post already assigned to a project, and only referenced fields valid within that project, required careful foreign key configuration. It also highlighted the limitations of SQL in enforcing cross-table constraints that span more than two relationships. We had to rely on both foreign keys and application logic to prevent invalid analysis entries.
-
 ### Learning Flask and Jinja Templates
 
-For many group members, this was the first time working with Flask and Jinja2. Understanding how to connect form inputs to backend processing, structure route handlers, and display query results using template inheritance required experimentation. Mastering this improved our ability to build interactive, consistent web interfaces that reflected underlying data accurately.
+This was our first time working with Flask and Jinja2. Understanding how to connect form inputs to backend processing, structure route handlers, and display query results using template inheritance required experimentation. Mastering this improved our ability to build interactive, consistent web interfaces that reflected underlying data accurately.
 
 ### Managing Partial and Duplicate Data
 
@@ -1031,10 +889,14 @@ Supporting real-world workflows like partial analysis results and optional user 
 
 ### Validation Oversights and Corrections
 
-During testing, we identified several important validation gaps:
-- **Future-Dated Posts**: The system initially allowed users to create posts with timestamps in the future, which was unrealistic and unintended. While not enforced at the SQL level, this was later corrected in the application logic.
-- **Invalid Reposts**: The application allowed users to create reposts that occurred before the original post was published, violating logical time flow. This was corrected both with a `CHECK` constraint in the schema and additional Flask-side validation.
-- **Cross-Project Analysis**: A user could mistakenly enter analysis results for a post that was not actually assigned to the selected project. To fix this, we enforced that any `PostAnalysis` entry must also exist in the `ProjectPost` table and added backend checks to restrict such mismatches.
+During testing, we identified several important validation gaps:  
+
+- **Future-Dated Posts**: The system initially allowed users to create posts with timestamps in the future, which was unrealistic and unintended. While not enforced at the SQL level, this was later corrected in the application logic.  
+
+- **Invalid Reposts**: The application allowed users to create reposts that occurred before the original post was published, violating logical time flow. This was corrected both with a `CHECK` constraint in the schema and additional Flask-side validation.  
+
+- **Cross-Project Analysis**: A user could mistakenly enter analysis results for a post that was not actually assigned to the selected project. To fix this, we enforced that any `PostAnalysis` entry must also exist in the `ProjectPost` table and added backend checks to restrict such mismatches.  
+
 
 These cases reinforced the importance of validating assumptions not just in schema design but also in user interactions. They also taught us how to handle edge cases through thoughtful application-layer safeguards in addition to database-level constraints.
 
@@ -1045,7 +907,7 @@ Overall, these challenges deepened our understanding of database design, data va
 
 \newpage
 
-# 12. Conclusion
+# 10. Conclusion
 
 This project resulted in a fully functional, relational database application for managing and analyzing social media posts across multiple platforms and research projects. The system provides robust support for original posts, reposts, users, and institutes, as well as for defining and tracking analysis results within customizable projects.
 
@@ -1053,10 +915,20 @@ Built using MySQL and Flask, the system emphasizes both flexibility and data int
 
 The application’s schema is normalized and constraint-driven, with composite keys, foreign keys, and validation checks that prevent inconsistent or duplicate data. While some features—such as user authentication or advanced data typing for fields—are outside the scope of the current implementation, the system was intentionally designed to be modular and extensible.
 
-Future improvements could include:
-- Support for typed or enumerated field values (e.g., numeric scores or category options)
-- Role-based access control for multiple users
-- Integration of basic analytics, reporting, or export tools
+Future improvements could include:  
+
+- Support for typed or enumerated field values (e.g., numeric scores or category options)  
+
+- Role-based access control for multiple users  
+
+- Integration of basic analytics, reporting, or export tools  
+
+- Implement more intuitive table displays in app  
+
+- Incorporate reposts in the post display  
+
+- Incorporate display filters for each page  
+
 
 In its current form, the system serves as a solid foundation for structured, manual social media content analysis and demonstrates a strong understanding of database design, application development, and user-centered interface structure.
 
@@ -1065,12 +937,17 @@ In its current form, the system serves as a solid foundation for structured, man
 
 \newpage
 
-# 13. Contributions
+# 11. Contributions
 
-List group member roles and tasks:
-- Jason Zeng: Python backend, CRUD logic, ER diagram
-- Harley Gribble: Schema design, MyQSL Database set up, Frontend templates
-- Matthew Virginia: Testing, validation, flask frontend
-- All: demo, and report
+List group member roles and tasks:  
+
+- Jason Zeng: Python backend, CRUD logic, Pytest Test Suite  
+
+- Harley Gribble: Schema design, MyQSL Database set up, Frontend templates  
+
+- Matthew Virginia: validation logic, Flask UI integration  
+
+- All: demo, and report  
+
 
 ---
